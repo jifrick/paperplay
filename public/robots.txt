@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /games/*?names=
+Sitemap: https://paperplay.example/sitemap.xml

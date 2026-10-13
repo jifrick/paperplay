@@ -1,0 +1,33 @@
+{
+  "name": "paperplay",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@fontsource/caveat": "latest",
+    "@fontsource/inter": "latest",
+    "@fontsource/space-grotesk": "latest",
+    "lucide-react": "latest",
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "jsdom": "^29.0.0",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}
