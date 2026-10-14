@@ -2,7 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://paperplay.example/</loc></url>
   <url><loc>https://paperplay.example/games/flames</loc></url>
-  <url><loc>https://paperplay.example/games/letter-match</loc></url>
   <url><loc>https://paperplay.example/games/name-number</loc></url>
   <url><loc>https://paperplay.example/games/love-meter</loc></url>
   <url><loc>https://paperplay.example/how-it-works</loc></url>

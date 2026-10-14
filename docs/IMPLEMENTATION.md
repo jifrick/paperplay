@@ -12,8 +12,8 @@ The initial workspace was a Windows home directory, not a repository. No PAPERPL
 - [ ] M1: paper tokens, local fonts, notebook cover/cards, responsive navigation, page transitions, all routes; shell tests/build.
 - [ ] M2: NFC/graphemes, validation, original/source positions, one-to-one matching; unit tests.
 - [ ] M3: exact FLAMES elimination records, zero case, three modes/copy, matching and round playback, details; unit/component tests.
-- [ ] M4: Letter Match, A1Z26 Name Number, deterministic Love Meter with all boundaries; unit/component tests.
-- [ ] M5: accessible pencil inputs, eraser/last grapheme, undo/reset, focus, replay, reduced motion and cancellation; component tests.
+- [ ] M4: A1Z26 Name Number, deterministic Love Meter with all boundaries; unit/component tests.
+- [ ] M5: accessible pencil inputs, automatic eraser/grapheme editing, undo/reset, focus, replay, reduced motion and cancellation; component tests.
 - [ ] M6: all-game PNG download, hide names, native share, cancellation, clipboard/manual fallback, private challenge URLs; tests.
 - [ ] M7: rules/example, privacy/about, route SEO, social preview, favicon, canonical/sitemap/robots, responsive/accessibility/security checks.
 - [ ] M8: full tests, typecheck, build, browser checks, deep-link serving, final QA and deployment instructions.
@@ -39,9 +39,9 @@ Record commands and actual outcomes at every gate below; no unrun checks count a
 - `node --version; npm --version` in `paperplay/`: Node `v24.11.1`, npm `11.6.2`.
 - `npm install`: completed successfully. `jsdom` is pinned to `^29.0.0` so the installed test environment supports the available Node runtime.
 - `npm run typecheck`: passed.
-- `npm test`: passed, 3 test files and 23 tests.
+- `npm test`: passed, 3 test files and 25 tests.
 - `npm run build`: passed; Vite emitted a production `dist/` bundle.
 - `npm run dev` plus HTTP smoke checks: `/` and `/games/flames` returned HTTP 200.
-- `npm run preview` plus HTTP smoke checks: `/`, all four `/games/*` routes, `/how-it-works`, `/about`, and `/privacy` returned HTTP 200.
+- `npm run preview` plus HTTP smoke checks: `/`, the three visible `/games/*` routes, `/how-it-works`, `/about`, and `/privacy` returned HTTP 200.
 
 No lint script is configured in this new app, so lint was not claimed as a pass. Browser automation was not included in the repository; React Testing Library integration tests and preview route checks are the repeatable automated coverage currently provided. A final hands-on check should still be made in a real browser at 320px and desktop widths before public launch.

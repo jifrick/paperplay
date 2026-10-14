@@ -1,6 +1,6 @@
 # PAPERPLAY
 
-PAPERPLAY is a browser-only collection of nostalgic notebook games built with React, TypeScript, and Vite. It includes FLAMES Classic, Letter Match, Name Number, and Love Meter.
+PAPERPLAY is a browser-only collection of nostalgic notebook games built with React, TypeScript, and Vite. It includes FLAMES Classic, Name Number, and Love Meter.
 
 ## Run locally
 
@@ -40,5 +40,5 @@ Before launch, replace the `paperplay.example` placeholder in `public/robots.txt
 - Names are not put in URLs by default. Share links carry only the game and optional FLAMES mode.
 - Native sharing falls back to clipboard copy, then a user-controlled copy prompt.
 - PNG result cards are generated locally with the Canvas API.
-- A–Z-only games explain that unsupported characters are excluded; FLAMES and Letter Match use NFC-normalized letter graphemes without transliteration.
+- A–Z-only games explain that unsupported characters are excluded; FLAMES uses NFC-normalized letter graphemes without transliteration.
 - Freehand input, audio, haptics, PWA installation, multiplayer, and analytics are intentionally outside the MVP.

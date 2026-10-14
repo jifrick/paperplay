@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowRight, BookOpen, Check, ChevronDown, Download, Eraser, ExternalLink, Gauge, Hash,
-  Heart, Info, ListChecks, Menu, Pencil, Play, RotateCcw, Share2, ShieldCheck, SkipForward,
+  ArrowRight, BookOpen, Check, ChevronDown, Download, ExternalLink, Gauge, Hash,
+  Heart, Info, Menu, Pencil, Play, RotateCcw, Share2, ShieldCheck, SkipForward,
   Sparkles, Undo2, Users, X,
 } from 'lucide-react';
+import { NotebookNameField } from './components/NotebookNameField';
 import { calculateFlames, FLAMES_MEANINGS } from './games/flames/calculateFlames';
 import { RESULT_COPY, MODE_LABELS } from './games/flames/flames.copy';
 import { FlamesMode, FlamesResult } from './games/flames/flames.types';
-import { calculateLetterMatch, LetterMatchCalculation } from './games/letter-match/calculateLetterMatch';
 import { calculateNameNumber, NameNumberCalculation } from './games/name-number/calculateNameNumber';
 import { calculateLoveMeter, LoveMeterCalculation } from './games/love-meter/calculateLoveMeter';
 import { matchLetterOccurrences } from './lib/matchLetterOccurrences';
@@ -16,20 +16,18 @@ import { downloadResultCard } from './lib/downloadCard';
 import { getChallengeUrl, shareResult } from './lib/share';
 
 type Route = { path: string; query: URLSearchParams };
-type GameId = 'flames' | 'letter-match' | 'name-number' | 'love-meter';
-type Calculation = FlamesResult | LetterMatchCalculation | NameNumberCalculation | LoveMeterCalculation;
+type GameId = 'flames' | 'name-number' | 'love-meter';
+type Calculation = FlamesResult | NameNumberCalculation | LoveMeterCalculation;
 type HistoryEntry = { first: string; second: string };
 
 const GAME_PATHS: Record<GameId, string> = {
   flames: '/games/flames',
-  'letter-match': '/games/letter-match',
   'name-number': '/games/name-number',
   'love-meter': '/games/love-meter',
 };
 
 const GAME_INFO: Record<GameId, { title: string; eyebrow: string; description: string; icon: typeof Heart; accent: string }> = {
-  flames: { title: 'FLAMES Classic', eyebrow: 'The school-notebook original', description: 'Cross out matching letters, count what remains, and let the paper decide which playful letter survives.', icon: Heart, accent: 'coral' },
-  'letter-match': { title: 'Letter Match', eyebrow: 'Count what you share', description: 'Pair up repeated letter occurrences and see the similarities hiding in two names.', icon: Users, accent: 'blue' },
+  flames: { title: 'FLAMES Classic', eyebrow: 'A notebook classic', description: 'Write two names, then let the page count the matching letters.', icon: Heart, accent: 'coral' },
   'name-number': { title: 'Name Number', eyebrow: 'A1Z26, notebook style', description: 'Turn every A–Z letter into a number and add up a transparent, deterministic score.', icon: Hash, accent: 'lavender' },
   'love-meter': { title: 'Love Meter', eyebrow: 'A playful score out of 100', description: 'Blend letter overlap with name-length balance for a completely fictional notebook reading.', icon: Gauge, accent: 'rose' },
 };
@@ -72,7 +70,7 @@ const Link = ({ href, children, className = '', onNavigate }: { href: string; ch
 const AppHeader = ({ onNavigate, pathname }: { onNavigate: (href: string) => void; pathname: string }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <header className="site-header">
+    <header className={`site-header ${pathname === GAME_PATHS.flames ? 'flames-header' : ''}`}>
       <div className="header-inner">
         <Link href="/" onNavigate={onNavigate} className="brand" aria-label="PAPERPLAY home">
           <span className="brand-mark"><BookOpen size={18} strokeWidth={2.5} /></span>
@@ -82,8 +80,8 @@ const AppHeader = ({ onNavigate, pathname }: { onNavigate: (href: string) => voi
           {navItems.map((item) => <Link key={item.href} href={item.href} onNavigate={(href) => { setMenuOpen(false); onNavigate(href); }} className={pathname === item.href || (item.href === '/games/flames' && pathname.startsWith('/games/')) ? 'active' : ''}>{item.label}</Link>)}
         </nav>
         <div className="header-actions">
-          <Link href="/games/flames" onNavigate={onNavigate} className="header-cta">Play now <ArrowRight size={15} /></Link>
-          <button className="icon-button mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
+          <Link href="/games/flames" onNavigate={onNavigate} className={`header-cta ${pathname === GAME_PATHS.flames ? 'notebook-button' : ''}`}>Play now <ArrowRight size={15} /></Link>
+          <button className={`icon-button mobile-menu ${pathname === GAME_PATHS.flames ? 'notebook-button' : ''}`} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
       </div>
     </header>
@@ -118,8 +116,8 @@ const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => (
       <div className="cover-copy"><span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span><h1>Remember when a name could change your whole <em>afternoon?</em></h1><p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p><div className="hero-actions"><button className="primary-button large" onClick={() => onNavigate('/games/flames')}><BookOpen size={19} /> Open notebook <ArrowRight size={17} /></button><Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link></div><p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p></div>
       <div className="cover-art" aria-label="An illustrated ruled notebook with a pink cover" role="img"><div className="doodle doodle-star">✦</div><div className="notebook-cover"><div className="cover-binding"><i /><i /><i /><i /><i /></div><div className="cover-title"><span>my</span><strong>NOTEBOOK</strong><small>paper games &amp; big feelings</small></div><div className="cover-scribble">xoxo</div></div><div className="paper-shadow" /></div>
     </section>
-    <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Four ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
-    <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={onNavigate} featured /><GameCard game="letter-match" onNavigate={onNavigate} /><GameCard game="name-number" onNavigate={onNavigate} /><GameCard game="love-meter" onNavigate={onNavigate} /></section>
+     <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Three ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
+     <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={onNavigate} featured /><GameCard game="name-number" onNavigate={onNavigate} /><GameCard game="love-meter" onNavigate={onNavigate} /></section>
     <section className="disclaimer-banner"><Info size={18} /><p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p></section>
   </>
 );
@@ -138,9 +136,8 @@ const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy'; onN
 
 const HowItWorks = () => <div className="prose-grid">
   <article className="prose-card"><span className="numbered">01</span><h2>FLAMES Classic</h2><p>We normalize the two names into letter graphemes, pair matching occurrences one-to-one, and count only what is left. If the count is N, we circle through F, L, A, M, E, S, removing the Nth surviving letter until one remains.</p><div className="flames-key">{(['F', 'L', 'A', 'M', 'E', 'S'] as const).map((letter) => <span key={letter}><b>{letter}</b>{FLAMES_MEANINGS[letter]}</span>)}</div></article>
-  <article className="prose-card"><span className="numbered">02</span><h2>Letter Match</h2><p>This is the cleanest counting game: ANNA and AMAN have three matched pairs, six matched occurrences, and two letters remaining. Pairs are never over-counted; one letter occurrence can only be used once.</p><div className="example-strip"><span>ANNA</span><ArrowRight size={16} /><span>AMAN</span><b>3 pairs · 6 occurrences</b></div></article>
-  <article className="prose-card"><span className="numbered">03</span><h2>Name Number</h2><p>For this PAPERPLAY original, A = 1 through Z = 26. Spaces and punctuation are ignored, every letter's value is shown, and the two subtotals are added. Non-A–Z-only names are explained instead of guessed.</p></article>
-  <article className="prose-card"><span className="numbered">04</span><h2>Love Meter</h2><p>This fictional score combines overlap (80%) and length balance (20%): <code>round(100 × (0.8 × M / max(A,B) + 0.2 × min(A,B) / max(A,B)))</code>. It is a name game, not a measure of compatibility.</p></article>
+  <article className="prose-card"><span className="numbered">02</span><h2>Name Number</h2><p>For this PAPERPLAY original, A = 1 through Z = 26. Spaces and punctuation are ignored, every letter's value is shown, and the two subtotals are added. Non-A–Z-only names are explained instead of guessed.</p></article>
+  <article className="prose-card"><span className="numbered">03</span><h2>Love Meter</h2><p>This fictional score combines overlap (80%) and length balance (20%): <code>round(100 × (0.8 × M / max(A,B) + 0.2 × min(A,B) / max(A,B)))</code>. It is a name game, not a measure of compatibility.</p></article>
 </div>;
 
 const About = () => <div className="prose-grid single-column"><article className="prose-card"><h2>The brief history of a very important question</h2><p>Someone writes two names. Someone else reaches for a pencil. Matching letters become tiny crossed-out secrets, and suddenly the back of a notebook is the most exciting place in the world.</p><p>PAPERPLAY keeps that feeling without pretending the result knows anything about real life. It is a tactile little ritual for friends, crushes, fictional couples, and anyone who likes a good reveal.</p><div className="quote-card">“The answer was probably already in the notebook.”<span>— an extremely unofficial schoolyard philosopher</span></div></article></div>;
@@ -177,15 +174,8 @@ export const App = () => {
 
 const ModeSelector = ({ mode, onChange }: { mode: FlamesMode; onChange: (mode: FlamesMode) => void }) => <fieldset className={`mode-selector mode-${mode}`}>
   <legend>Choose a mood <span>It changes the copy, never the calculation.</span></legend>
-  <div className="mode-options">{(['crush', 'friendship', 'fictional'] as FlamesMode[]).map((value) => <button type="button" key={value} className={mode === value ? 'selected' : ''} aria-pressed={mode === value} onClick={() => onChange(value)}><span className="mode-icon">{value === 'crush' ? <Heart size={16} /> : value === 'friendship' ? <Users size={16} /> : <Sparkles size={16} />}</span>{MODE_LABELS[value]}{mode === value && <Check size={15} />}</button>)}</div>
+   <div className="mode-options">{(['crush', 'friendship', 'fictional'] as FlamesMode[]).map((value) => <button type="button" key={value} className={`notebook-button mood-button ${mode === value ? 'selected' : ''}`} aria-pressed={mode === value} onClick={() => onChange(value)}><span className="mode-icon">{value === 'crush' ? <Heart size={16} /> : value === 'friendship' ? <Users size={16} /> : <Sparkles size={16} />}</span>{MODE_LABELS[value]}{mode === value && <Check size={15} />}</button>)}</div>
 </fieldset>;
-
-const NameField = ({ id, label, value, active, onFocus, onChange, onErase }: { id: string; label: string; value: string; active: boolean; onFocus: () => void; onChange: (value: string) => void; onErase: () => void }) => <div className={`name-field ${active ? 'active' : ''}`}>
-  <label htmlFor={id}><span>{label}</span><small>{active ? 'pencil ready' : 'tap to write'}</small></label>
-  <div className="writing-line"><span className="pencil-script" aria-hidden="true">{value || 'write a name...'}</span><span className="cursor-mark" aria-hidden="true">{active ? '▌' : ''}</span><Pencil className="line-pencil" size={17} aria-hidden="true" /></div>
-  <input id={id} name={id} value={value} autoComplete="off" onFocus={onFocus} onChange={(event) => onChange(event.target.value)} aria-describedby={`${id}-hint`} />
-  <div className="field-footer"><span id={`${id}-hint`}>Letters, spaces, and punctuation are welcome.</span><button type="button" className="erase-inline" onClick={onErase} aria-label={`Erase last character from ${label}`}><Eraser size={14} /> Erase last</button></div>
-</div>;
 
 const LetterTiles = ({ value, matchedIndexes, label }: { value: string; matchedIndexes: Set<number>; label: string }) => <div className="letter-line" aria-label={`${label}: ${value || 'empty'}`}>
   {segmentGraphemes(value.trim().normalize('NFC')).map((character, index) => {
@@ -215,17 +205,15 @@ const ResultActions = ({ game, names, summary, mode, onNavigate, onReset, onChan
     try { await downloadResultCard({ game: GAME_INFO[game].title, names: hideNames ? undefined : `${names.first.trim()} + ${names.second.trim()}`, result: summary.result, message: summary.message, detail: summary.detail }); onToast('Result card downloaded.'); }
     catch { onToast('The result card could not be exported in this browser.'); }
   };
-  return <div className="result-actions"><label className="hide-names"><input type="checkbox" checked={hideNames} onChange={(event) => setHideNames(event.target.checked)} /> Hide names on card</label><div className="action-row"><button type="button" className="primary-button" onClick={handleShare}><Share2 size={16} /> Share result</button><button type="button" className="secondary-button" onClick={handleDownload}><Download size={16} /> Download card</button></div><div className="action-row secondary-actions"><button type="button" className="text-button" onClick={onReset}><RotateCcw size={15} /> Play again</button><button type="button" className="text-button" onClick={onChangeNames}><Pencil size={15} /> Change names</button><button type="button" className="text-button" onClick={() => onNavigate('/')}><ExternalLink size={15} /> Try another game</button></div></div>;
+  return <div className="result-actions"><label className="hide-names"><input type="checkbox" checked={hideNames} onChange={(event) => setHideNames(event.target.checked)} /> Hide names on card</label><div className="action-row"><button type="button" className="notebook-button primary-button" onClick={handleShare}><Share2 size={16} /> Share result</button><button type="button" className="notebook-button secondary-button" onClick={handleDownload}><Download size={16} /> Download card</button></div><div className="action-row secondary-actions"><button type="button" className="notebook-button text-button" onClick={onReset}><RotateCcw size={15} /> Play again</button><button type="button" className="notebook-button text-button" onClick={onChangeNames}><Pencil size={15} /> Change names</button><button type="button" className="notebook-button text-button" onClick={() => onNavigate('/')}><ExternalLink size={15} /> Try another game</button></div></div>;
 };
 
 const FlamesResultView = ({ result, first, second, visibleRounds, reducedMotion, onSkip, onReset, onChangeNames, onNavigate, onToast }: { result: FlamesResult; first: string; second: string; visibleRounds: number; reducedMotion: boolean; onSkip: () => void; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => {
   if (result.status === 'zero-count') return <section className="result-card zero-result" aria-live="polite"><span className="result-stamp">No elimination needed</span><h2>Every letter matched!</h2><p>{result.edgeCaseMessage}</p><MatchingBreakdown first={first} second={second} /><ResultActions game="flames" names={{ first, second }} summary={{ result: 'Every letter matched!', message: result.edgeCaseMessage ?? '', detail: 'Zero unmatched letters; no FLAMES result was fabricated.' }} mode={result.mode} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
   const copy = RESULT_COPY[result.mode][result.category!];
   const roundsToShow = reducedMotion ? result.rounds : result.rounds.slice(0, visibleRounds);
-  return <section className="result-card flames-result" aria-live="polite"><div className="result-heading"><span className="result-stamp">The surviving letter</span><div className="surviving-letter">{result.finalLetter}</div><p className="result-category">{result.category}</p><h2>{copy}</h2></div><MatchingBreakdown first={first} second={second} /><div className="elimination-card"><div className="breakdown-heading"><div><span className="section-kicker">Circular elimination</span><h2>Watch the notebook count</h2></div><span className="count-badge">N = {result.remainingCount}</span></div><div className="flames-strip">{(['F', 'L', 'A', 'M', 'E', 'S'] as const).map((letter) => <span key={letter} className={letter === result.finalLetter ? 'survives' : ''}>{letter}<small>{FLAMES_MEANINGS[letter]}</small></span>)}</div><div className="round-list">{roundsToShow.map((round, index) => <div className="round-row" key={`${index}-${round.removed}`}><span className="round-number">{String(index + 1).padStart(2, '0')}</span><span>From <b>{round.lettersBefore.join(' · ')}</b>, count {round.count} from position {round.startingIndex + 1}.</span><strong>cross out {round.removed}</strong></div>)}</div>{visibleRounds < result.rounds.length && !reducedMotion && <button className="skip-button" type="button" onClick={onSkip}><SkipForward size={15} /> Skip animation · show all steps</button>}</div><p className="entertainment-note"><Info size={15} /> Just a name game — not a real measure of compatibility.</p><ResultActions game="flames" names={{ first, second }} summary={{ result: `${result.finalLetter} — ${result.category}`, message: copy, detail: `${result.matchedPairs.length} matched pairs; ${result.remainingCount} letters entered the elimination.` }} mode={result.mode} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
+  return <section className="result-card flames-result" aria-live="polite"><div className="result-heading"><span className="result-stamp">The surviving letter</span><div className="surviving-letter">{result.finalLetter}</div><p className="result-category">{result.category}</p><h2>{copy}</h2></div><MatchingBreakdown first={first} second={second} /><div className="elimination-card"><div className="breakdown-heading"><div><span className="section-kicker">Circular elimination</span><h2>Watch the notebook count</h2></div><span className="count-badge">N = {result.remainingCount}</span></div><div className="flames-strip">{(['F', 'L', 'A', 'M', 'E', 'S'] as const).map((letter) => <span key={letter} className={letter === result.finalLetter ? 'survives' : ''}>{letter}<small>{FLAMES_MEANINGS[letter]}</small></span>)}</div><div className="round-list">{roundsToShow.map((round, index) => <div className="round-row" key={`${index}-${round.removed}`}><span className="round-number">{String(index + 1).padStart(2, '0')}</span><span>From <b>{round.lettersBefore.join(' · ')}</b>, count {round.count} from position {round.startingIndex + 1}.</span><strong>cross out {round.removed}</strong></div>)}</div>{visibleRounds < result.rounds.length && !reducedMotion && <button className="notebook-button skip-button" type="button" onClick={onSkip}><SkipForward size={15} /> Skip animation · show all steps</button>}</div><p className="entertainment-note"><Info size={15} /> Just a name game — not a real measure of compatibility.</p><ResultActions game="flames" names={{ first, second }} summary={{ result: `${result.finalLetter} — ${result.category}`, message: copy, detail: `${result.matchedPairs.length} matched pairs; ${result.remainingCount} letters entered the elimination.` }} mode={result.mode} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
 };
-
-const LetterMatchResultView = ({ result, first, second, onReset, onChangeNames, onNavigate, onToast }: { result: LetterMatchCalculation; first: string; second: string; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => <section className="result-card" aria-live="polite"><span className="result-stamp">Letter Match</span><h2>{result.matchedPairCount > 2 ? 'Lots in common.' : result.matchedPairCount > 0 ? 'Some letters in common.' : 'Different letters, same fun.'}</h2><div className="big-stat"><strong>{result.matchedPairCount}</strong><span>matched pairs</span></div><MatchingBreakdown first={first} second={second} /><CalculationDetails open><p>Each occurrence is paired once. {result.matchedPairCount} pairs means {result.matchedOccurrenceCount} occurrences across both names, leaving {result.totalUnmatchedCount} letters unmatched.</p></CalculationDetails><p className="entertainment-note"><Info size={15} /> A counting game, not a scientifically meaningful compatibility percentage.</p><ResultActions game="letter-match" names={{ first, second }} summary={{ result: `${result.matchedPairCount} matched pairs`, message: 'Lots in common.', detail: `${result.totalUnmatchedCount} letters remain.` }} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
 
 const NumberResultView = ({ result, first, second, onReset, onChangeNames, onNavigate, onToast }: { result: NameNumberCalculation; first: string; second: string; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => <section className="result-card" aria-live="polite"><span className="result-stamp">Name Number</span><div className="number-result"><div><span className="result-category">{result.category}</span><h2>{result.combinedScore}</h2><p>combined notebook points</p></div><div className="score-columns"><ScoreColumn name={first} letters={result.first.letters} score={result.first.score} /><ScoreColumn name={second} letters={result.second.letters} score={result.second.score} /></div></div><CalculationDetails open><p><b>{first.trim()}</b> adds {result.first.score}; <b>{second.trim()}</b> adds {result.second.score}. Combined: {result.first.score} + {result.second.score} = {result.combinedScore}. {result.combinedScore} ÷ 5 leaves remainder {result.categoryIndex}, which selects “{result.category}”.</p></CalculationDetails>{result.unsupportedCharacters && <p className="input-note"><Info size={14} /> Only A–Z letters receive values; other characters were left out of this subtotal.</p>}<p className="entertainment-note"><Info size={15} /> A1Z26 is a PAPERPLAY invention for entertainment, not a personality test.</p><ResultActions game="name-number" names={{ first, second }} summary={{ result: `${result.combinedScore} points · ${result.category}`, message: 'A transparent A1Z26 notebook score.', detail: `${result.first.score} + ${result.second.score} = ${result.combinedScore}` }} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
 
@@ -238,7 +226,6 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const [names, setNames] = useState({ first: '', second: '' });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [activeField, setActiveField] = useState<'first' | 'second'>('first');
-  const [activeTool, setActiveTool] = useState<'pencil' | 'eraser'>('pencil');
   const requestedMode = query.get('mode');
   const initialMode: FlamesMode = requestedMode === 'friendship' || requestedMode === 'fictional' ? requestedMode : 'crush';
   const [mode, setMode] = useState<FlamesMode>(initialMode);
@@ -247,8 +234,8 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const [visibleRounds, setVisibleRounds] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [toast, setToast] = useState('');
-  const firstInput = useRef<HTMLInputElement>(null);
-  const secondInput = useRef<HTMLInputElement>(null);
+  const firstInput = useRef<HTMLTextAreaElement>(null);
+  const secondInput = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -269,16 +256,10 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3200); return () => window.clearTimeout(timer); }, [toast]);
 
   const updateName = (field: 'first' | 'second', value: string) => {
+    if (value === names[field]) return;
     setHistory((past) => [...past.slice(-19), names]);
     setNames((current) => ({ ...current, [field]: value }));
     setResult(null); setError('');
-  };
-  const eraseLast = () => {
-    const value = names[activeField];
-    const graphemes = segmentGraphemes(value);
-    if (!graphemes.length) return;
-    updateName(activeField, graphemes.slice(0, -1).join(''));
-    (activeField === 'first' ? firstInput : secondInput).current?.focus();
   };
   const undo = () => {
     const previous = history.at(-1);
@@ -289,15 +270,13 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const changeNames = () => { setResult(null); setError(''); setActiveField('first'); window.setTimeout(() => firstInput.current?.focus(), 0); };
   const calculate = () => {
     setError('');
-    const calculation = game === 'flames' ? calculateFlames(names.first, names.second, mode) : game === 'letter-match' ? calculateLetterMatch(names.first, names.second) : game === 'name-number' ? calculateNameNumber(names.first, names.second) : calculateLoveMeter(names.first, names.second);
+    const calculation = game === 'flames' ? calculateFlames(names.first, names.second, mode) : game === 'name-number' ? calculateNameNumber(names.first, names.second) : calculateLoveMeter(names.first, names.second);
     if ('error' in calculation) { setResult(null); setError(calculation.error); return; }
     setResult(calculation); setToast('Calculation ready — the notebook has spoken.');
   };
-  const focusAndSetTool = (tool: 'pencil' | 'eraser') => { setActiveTool(tool); (activeField === 'first' ? firstInput : secondInput).current?.focus(); };
   const renderResult = () => {
     if (!result) return null;
     if (game === 'flames' && 'rounds' in result) return <FlamesResultView result={result} first={names.first} second={names.second} visibleRounds={visibleRounds} reducedMotion={reducedMotion} onSkip={() => setVisibleRounds(result.rounds.length)} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
-    if (game === 'letter-match' && 'matchedPairs' in result) return <LetterMatchResultView result={result as LetterMatchCalculation} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
     if (game === 'name-number' && 'combinedScore' in result) return <NumberResultView result={result as NameNumberCalculation} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
     if (game === 'love-meter' && 'band' in result) return <LoveMeterResultView result={result as LoveMeterCalculation} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
     return null;
@@ -306,18 +285,17 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const firstName = useMemo(() => names.first ? matchLetterOccurrences(names.first, '').first : null, [names.first]);
   const secondName = useMemo(() => names.second ? matchLetterOccurrences(names.second, '').first : null, [names.second]);
   return <PaperPage className={`game-page game-${game} accent-${info.accent}`}>
-    <div className="game-breadcrumb"><button type="button" className="back-link" onClick={() => onNavigate('/')}><ArrowRight size={15} className="back-arrow" /> All games</button><span> / {info.title}</span></div>
-    <div className="game-heading"><div><span className="section-kicker"><Icon size={15} /> {info.eyebrow}</span><h1>{info.title}</h1><p>{info.description}</p></div><span className="page-number">p. {game === 'flames' ? '01' : game === 'letter-match' ? '02' : game === 'name-number' ? '03' : '04'}</span></div>
+     <div className="game-breadcrumb"><button type="button" className="notebook-button back-link" onClick={() => onNavigate('/')}><ArrowRight size={15} className="back-arrow" /> All games</button><span> / {info.title}</span></div>
+     <div className="game-heading"><div><span className="section-kicker"><Icon size={15} /> {info.eyebrow}</span><h1>{info.title}</h1><p>{info.description}</p></div><span className="page-number">p. {game === 'flames' ? '01' : game === 'name-number' ? '02' : '03'}</span></div>
     <form className="game-form" onSubmit={(event) => { event.preventDefault(); calculate(); }} noValidate>
-      {game === 'flames' && <ModeSelector mode={mode} onChange={(value) => { setMode(value); setResult(null); }} />}
-      <div className="name-inputs"><NameField id={`${game}-first-name`} label="First name" value={names.first} active={activeField === 'first'} onFocus={() => { setActiveField('first'); setActiveTool('pencil'); }} onChange={(value) => updateName('first', value)} onErase={eraseLast} /><div className="plus-mark" aria-hidden="true">+</div><NameField id={`${game}-second-name`} label="Second name" value={names.second} active={activeField === 'second'} onFocus={() => { setActiveField('second'); setActiveTool('pencil'); }} onChange={(value) => updateName('second', value)} onErase={eraseLast} /></div>
+       
+       <div className="name-inputs"><NotebookNameField id={`${game}-first-name`} label="First name" value={names.first} active={activeField === 'first'} reducedMotion={reducedMotion} inputRef={firstInput} onFocus={() => setActiveField('first')} onChange={(value) => updateName('first', value)} onEnter={calculate} /><div className="plus-mark" aria-hidden="true">+</div><NotebookNameField id={`${game}-second-name`} label="Second name" value={names.second} active={activeField === 'second'} reducedMotion={reducedMotion} inputRef={secondInput} onFocus={() => setActiveField('second')} onChange={(value) => updateName('second', value)} onEnter={calculate} /></div>
       {(firstName?.hasUnsupportedCharacters || secondName?.hasUnsupportedCharacters) && <p className="input-note"><Info size={14} /> Spaces and punctuation are ignored. Symbols and emoji are shown for context but do not count; {game === 'name-number' || game === 'love-meter' ? 'this page scores A–Z letters only.' : 'letter graphemes are matched one at a time.'}</p>}
-      <div className="tool-bar"><div className="tool-buttons" role="toolbar" aria-label="Notebook tools"><button type="button" className={activeTool === 'pencil' ? 'tool-active' : ''} aria-pressed={activeTool === 'pencil'} onClick={() => focusAndSetTool('pencil')}><Pencil size={16} /> Pencil</button><button type="button" className={activeTool === 'eraser' ? 'tool-active' : ''} aria-pressed={activeTool === 'eraser'} onClick={() => focusAndSetTool('eraser')}><Eraser size={16} /> Eraser</button></div><div className="tool-buttons"><button type="button" onClick={undo} disabled={!history.length}><Undo2 size={16} /> Undo</button><button type="button" onClick={reset}><RotateCcw size={16} /> Reset</button></div></div>
-      <div className="form-submit"><button type="submit" className="primary-button large"><Play size={17} fill="currentColor" /> Calculate {game === 'flames' ? 'FLAMES' : 'result'} <ArrowRight size={17} /></button><span>Press Enter anytime. You can edit names after a result.</span></div>
+        <div className="tool-bar compact-tools"><div className="tool-buttons"><button type="button" className="notebook-button tool-button" onClick={undo} disabled={!history.length}><Undo2 size={16} /> Undo</button><button type="button" className="notebook-button tool-button" onClick={reset}><RotateCcw size={16} /> Reset</button></div></div>
+       <div className="form-submit"><button type="submit" className="notebook-button primary-button large"><Play size={17} fill="currentColor" /> Calculate {game === 'flames' ? 'FLAMES' : 'result'} <ArrowRight size={17} /></button><span>Press Enter anytime. You can edit names after a result.</span></div>
       {error && <p className="form-error" role="alert"><X size={16} /> {error}</p>}
     </form>
     {result && <div className="result-area">{renderResult()}</div>}
-    {!result && <div className="empty-tip"><Pencil size={18} /><span><strong>A blank page is a good start.</strong> Write two names above, then let the notebook do the counting.</span></div>}
     {toast && <div className="toast" role="status"><Check size={16} /> {toast}</div>}
   </PaperPage>;
 };
