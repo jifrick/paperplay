@@ -5,6 +5,7 @@ import {
   Sparkles, Undo2, Users, X,
 } from 'lucide-react';
 import { NotebookNameField } from './components/NotebookNameField';
+import { PhysicalNotebook } from './components/PhysicalNotebook';
 import { calculateFlames, FLAMES_MEANINGS } from './games/flames/calculateFlames';
 import { RESULT_COPY, MODE_LABELS } from './games/flames/flames.copy';
 import { FlamesMode, FlamesResult } from './games/flames/flames.types';
@@ -110,17 +111,29 @@ const GameCard = ({ game, onNavigate, featured = false }: { game: GameId; onNavi
   </article>;
 };
 
-const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => (
-  <>
+const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
+  const [opening, setOpening] = useState<string | null>(null);
+  const openNotebook = (destination = '/games/flames') => {
+    if (opening) {
+      onNavigate(destination);
+      return;
+    }
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { onNavigate(destination); return; }
+    setOpening(destination);
+    window.setTimeout(() => onNavigate(destination), 2200);
+  };
+
+  return <>
     <section className="cover-section">
-      <div className="cover-copy"><span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span><h1>Remember when a name could change your whole <em>afternoon?</em></h1><p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p><div className="hero-actions"><button className="primary-button large" onClick={() => onNavigate('/games/flames')}><BookOpen size={19} /> Open notebook <ArrowRight size={17} /></button><Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link></div><p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p></div>
-      <div className="cover-art" aria-label="An illustrated ruled notebook with a pink cover" role="img"><div className="doodle doodle-star">✦</div><div className="notebook-cover"><div className="cover-binding"><i /><i /><i /><i /><i /></div><div className="cover-title"><span>my</span><strong>NOTEBOOK</strong><small>paper games &amp; big feelings</small></div><div className="cover-scribble">xoxo</div></div><div className="paper-shadow" /></div>
+       <div className="cover-copy"><span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span><h1>Remember when a name could change your whole <em>afternoon?</em></h1><p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p><div className="hero-actions"><button className="primary-button large" onClick={() => openNotebook()} disabled={Boolean(opening)}><BookOpen size={19} /> Open notebook <ArrowRight size={17} /></button><Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link></div><p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p></div>
+       <div className={`cover-art ${opening ? 'is-opening' : ''}`}><div className="doodle doodle-star">✦</div><div className="hero-doodles" aria-hidden="true"><span className="doodle-heart">♡</span><span className="doodle-cross">A̶ + B̶</span><span className="doodle-math">2 + 2 = ?</span><span className="doodle-pencil">— — ✎</span></div><PhysicalNotebook opening={Boolean(opening)} /></div>
     </section>
-     <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Three ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
-     <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={onNavigate} featured /><GameCard game="name-number" onNavigate={onNavigate} /><GameCard game="love-meter" onNavigate={onNavigate} /></section>
-    <section className="disclaimer-banner"><Info size={18} /><p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p></section>
-  </>
-);
+      <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Three ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
+      <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={() => openNotebook(GAME_PATHS.flames)} featured /><GameCard game="name-number" onNavigate={() => openNotebook(GAME_PATHS['name-number'])} /><GameCard game="love-meter" onNavigate={() => openNotebook(GAME_PATHS['love-meter'])} /></section>
+     <section className="disclaimer-banner"><Info size={18} /><p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p></section>
+   </>;
+};
 
 const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy'; onNavigate: (href: string) => void }) => {
   const content = {
