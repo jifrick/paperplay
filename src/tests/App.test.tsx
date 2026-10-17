@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 
@@ -286,7 +286,8 @@ describe('PAPERPLAY user flow', () => {
     ['/games/love-meter', 'Love Meter'],
     ['/how-it-works', /How the notebook works/i],
     ['/about', /Made for the margin doodlers/i],
-    ['/privacy', /Your names stay on the page/i],
+    ['/privacy', /Privacy Policy/i],
+    ['/contact', /Contact PAPERPLAY/i],
   ])('renders the remaining route %s', (path, heading) => {
     window.history.pushState({}, '', path);
     render(<App />);
@@ -308,6 +309,38 @@ describe('PAPERPLAY user flow', () => {
     expect(screen.queryByText('Letter Match')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /back home/i }));
     expect(screen.getByRole('heading', { name: /Remember when a name could change/i })).toBeInTheDocument();
+  });
+
+  it('exposes the privacy and contact links with the official contact email', () => {
+    render(<App />);
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact');
+
+    window.history.pushState({}, '', '/contact');
+    fireEvent(window, new PopStateEvent('popstate'));
+    expect(screen.getByRole('link', { name: 'yawmatic.in@gmail.com' })).toHaveAttribute('href', 'mailto:yawmatic.in@gmail.com');
+  });
+
+  it('provides the five-position mobile dock and routes its More links', () => {
+    render(<App />);
+    const mobileNav = screen.getByRole('navigation', { name: 'PAPERPLAY mobile navigation' });
+
+    expect(within(mobileNav).getAllByRole('link')).toHaveLength(4);
+    expect(within(mobileNav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(within(mobileNav).getByRole('link', { name: 'How It Works' })).toHaveAttribute('href', '/how-it-works');
+    expect(within(mobileNav).getByRole('link', { name: 'Play' })).toHaveAttribute('href', '/games/flames');
+    expect(within(mobileNav).getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about');
+
+    const moreButton = within(mobileNav).getByRole('button', { name: 'More' });
+    expect(moreButton).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(moreButton);
+    expect(moreButton).toHaveAttribute('aria-expanded', 'true');
+    expect(within(mobileNav).getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    expect(within(mobileNav).getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact');
+
+    fireEvent.click(within(mobileNav).getByRole('link', { name: 'Privacy Policy' }));
+    expect(screen.getByRole('heading', { name: 'Privacy Policy' })).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'PAPERPLAY mobile navigation' })).getByRole('button', { name: 'More' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it.each([

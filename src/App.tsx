@@ -16,6 +16,7 @@ import { matchLetterOccurrences } from './lib/matchLetterOccurrences';
 import { segmentGraphemes } from './lib/normalizeName';
 import { downloadResultCard } from './lib/downloadCard';
 import { getChallengeUrl, shareResult } from './lib/share';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 type Route = { path: string; query: URLSearchParams };
 type GameId = 'flames' | 'name-number' | 'love-meter';
@@ -100,7 +101,7 @@ const Footer = ({ onNavigate }: { onNavigate: (href: string) => void }) => (
   <footer className="site-footer">
     <div className="footer-main">
       <div><Link href="/" onNavigate={onNavigate} className="brand footer-brand"><span className="brand-mark"><BookOpen size={17} /></span><span>PAPERPLAY</span></Link><p>Open a page. Write two names. Play like old times.</p></div>
-      <div className="footer-links"><div><strong>Explore</strong><Link href="/games/flames" onNavigate={onNavigate}>Play Games</Link><Link href="/how-it-works" onNavigate={onNavigate}>How It Works</Link></div><div><strong>About</strong><Link href="/about" onNavigate={onNavigate}>Our little notebook</Link><Link href="/privacy" onNavigate={onNavigate}>Privacy</Link></div></div>
+      <div className="footer-links"><div><strong>Explore</strong><Link href="/games/flames" onNavigate={onNavigate}>Play Games</Link><Link href="/how-it-works" onNavigate={onNavigate}>How It Works</Link></div><div><strong>About</strong><Link href="/about" onNavigate={onNavigate}>Our little notebook</Link><Link href="/privacy" onNavigate={onNavigate}>Privacy Policy</Link><Link href="/contact" onNavigate={onNavigate}>Contact</Link></div></div>
     </div>
     <div className="footer-bottom"><span>Made for harmless fun and very serious doodles.</span><span>© {new Date().getFullYear()} PAPERPLAY</span></div>
   </footer>
@@ -158,15 +159,16 @@ const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
    </>;
 };
 
-const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy'; onNavigate: (href: string) => void }) => {
+const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy' | 'contact'; onNavigate: (href: string) => void }) => {
   const content = {
     how: { kicker: 'The rules, out in the open', title: <>How the <em>notebook</em> works</>, intro: 'Every calculation happens right here in your browser. No mysterious black boxes—just the same small rituals, written down clearly.' },
     about: { kicker: 'A little corner of the internet', title: <>Made for the <em>margin doodlers</em></>, intro: 'PAPERPLAY is a digital collection of the notebook games that made ordinary school days feel like an event.' },
-    privacy: { kicker: 'A promise in pencil', title: <>Your names stay <em>on the page</em></>, intro: 'PAPERPLAY is designed to be a tiny, private, browser-only experience.' },
+    privacy: { kicker: 'A promise in pencil', title: <>Privacy <em>Policy</em></>, intro: 'PAPERPLAY is designed to be a tiny, browser-based experience with clear, practical privacy information.' },
+    contact: { kicker: 'Leave a note in the margin', title: <>Contact <em>PAPERPLAY</em></>, intro: 'Found a bug, have feedback, or need help with one of the games? We would be glad to hear from you.' },
   }[kind];
   return <PaperPage className="info-page"><span className="section-kicker">{content.kicker}</span><h1>{content.title}</h1><p className="info-intro">{content.intro}</p>
-    {kind === 'how' && <HowItWorks />}{kind === 'about' && <About />}{kind === 'privacy' && <Privacy />}
-    <div className="info-cta"><p>Ready to write a name?</p><button className="primary-button" onClick={() => onNavigate('/games/flames')}>Open a game <ArrowRight size={16} /></button></div>
+     {kind === 'how' && <HowItWorks />}{kind === 'about' && <About />}{kind === 'privacy' && <Privacy />}{kind === 'contact' && <Contact />}
+     {kind !== 'contact' && <div className="info-cta"><p>Ready to write a name?</p><button className="primary-button" onClick={() => onNavigate('/games/flames')}>Open a game <ArrowRight size={16} /></button></div>}
   </PaperPage>;
 };
 
@@ -177,7 +179,19 @@ const HowItWorks = () => <div className="prose-grid">
 </div>;
 
 const About = () => <div className="prose-grid single-column"><article className="prose-card"><h2>The brief history of a very important question</h2><p>Someone writes two names. Someone else reaches for a pencil. Matching letters become tiny crossed-out secrets, and suddenly the back of a notebook is the most exciting place in the world.</p><p>PAPERPLAY keeps that feeling without pretending the result knows anything about real life. It is a tactile little ritual for friends, crushes, fictional couples, and anyone who likes a good reveal.</p><div className="quote-card">“The answer was probably already in the notebook.”<span>— an extremely unofficial schoolyard philosopher</span></div></article></div>;
-const Privacy = () => <div className="prose-grid single-column"><article className="prose-card"><h2>What happens to a name?</h2><ul className="check-list"><li><Check size={17} /><span>Core calculations happen entirely in your browser.</span></li><li><Check size={17} /><span>Your names are not stored by default, sent to AI APIs, or logged by PAPERPLAY.</span></li><li><Check size={17} /><span>Names do not go in result URLs. Sharing only happens after you choose it.</span></li><li><Check size={17} /><span>The optional download card is generated locally in your browser.</span></li></ul><p>There are no accounts, databases, analytics scripts, or third-party trackers in this initial release. If that changes, this page will say so plainly.</p></article></div>;
+const Privacy = () => <div className="prose-grid single-column privacy-content">
+  <article className="prose-card"><h2>About PAPERPLAY</h2><p>PAPERPLAY is a browser-based collection of playful name games, including FLAMES Classic, Name Number, and Love Meter. The results are for entertainment and do not provide scientific, relationship, or personal advice.</p></article>
+  <article className="prose-card"><h2>Information handled</h2><p>Names and other text entered into a game are processed in the browser to calculate and display a result. The application keeps those values in temporary React state while the page is open. The current application does not send game inputs to a PAPERPLAY server, store them in an account, put them in result URLs, or save them to browser storage.</p><p>Sharing is optional. If you choose the browser share sheet or clipboard action, your browser handles that action. A downloaded result card is generated locally in the browser.</p></article>
+  <article className="prose-card"><h2>Cookies and browser storage</h2><p>The current PAPERPLAY code does not set cookies and does not use <code>localStorage</code> or <code>sessionStorage</code>. Your browser, hosting provider, or security infrastructure may process ordinary technical request information when serving a website. Those infrastructure practices depend on the provider used for the deployment.</p></article>
+  <article className="prose-card"><h2>Third-party services and advertising</h2><p>The current release does not include analytics, AdSense, advertising scripts, advertising cookies, or third-party tracking. Fonts and application dependencies are bundled with the site rather than loaded from an external font or analytics service.</p><p>If advertising or another third-party service is added later, this policy will be updated before activation to explain the service, the information it may process, applicable cookies or similar technologies, and available choices. No advertising is active in the current release.</p></article>
+  <article className="prose-card"><h2>Children’s privacy</h2><p>PAPERPLAY is a general-audience entertainment website and is not presented as a service directed to children. Please do not provide sensitive personal information in a game name field or in a message. If you believe a child has shared personal information with the site, contact us so the situation can be reviewed.</p></article>
+  <article className="prose-card"><h2>External websites</h2><p>PAPERPLAY may be hosted by a third-party infrastructure provider, and browser features such as sharing or clipboard access are controlled by your browser and operating system. Those providers have their own privacy practices. PAPERPLAY does not control external websites or third-party policies.</p></article>
+  <article className="prose-card"><h2>Updates and contact</h2><p>This policy may be updated when the application, hosting arrangement, or services change. The “last updated” date below will be revised when a material change is made.</p><p>For privacy questions, contact <a className="inline-link" href="mailto:yawmatic.in@gmail.com">yawmatic.in@gmail.com</a>.</p><p className="policy-meta"><strong>Last updated:</strong> October 17, 2026</p></article>
+</div>;
+
+const Contact = () => <div className="prose-grid single-column contact-content">
+  <article className="prose-card"><h2>Write to us</h2><p>For bug reports, game issues, feedback, privacy questions, or general enquiries, email the PAPERPLAY team:</p><p className="contact-email"><a href="mailto:yawmatic.in@gmail.com">yawmatic.in@gmail.com</a></p><p>When reporting a bug, it helps to include the page or game you were using, what you expected to happen, and what happened instead. Please avoid sending sensitive personal information or names you do not want to share.</p></article>
+</div>;
 
 const getPageMetadata = (path: string) => {
   if (path === '/') return { title: 'PAPERPLAY — Nostalgic notebook games', description: 'PAPERPLAY brings nostalgic school notebook games to life. Write two names and play like old times.' };
@@ -188,6 +202,7 @@ const getPageMetadata = (path: string) => {
   if (path === '/how-it-works') return { title: 'How It Works — PAPERPLAY', description: 'Learn the transparent, deterministic rules behind PAPERPLAY notebook games.' };
   if (path === '/about') return { title: 'About — PAPERPLAY', description: 'Meet PAPERPLAY, a playful digital collection of childhood notebook games.' };
   if (path === '/privacy') return { title: 'Privacy — PAPERPLAY', description: 'PAPERPLAY runs core calculations in your browser and does not store names by default.' };
+  if (path === '/contact') return { title: 'Contact — PAPERPLAY', description: 'Contact PAPERPLAY about bugs, game issues, feedback, privacy questions, and general enquiries.' };
   return { title: 'Page not found — PAPERPLAY', description: 'Turn the page back to PAPERPLAY.' };
 };
 
@@ -219,8 +234,9 @@ export const App = () => {
   else if (route.path === '/how-it-works') content = <InfoPage kind="how" onNavigate={navigate} />;
   else if (route.path === '/about') content = <InfoPage kind="about" onNavigate={navigate} />;
   else if (route.path === '/privacy') content = <InfoPage kind="privacy" onNavigate={navigate} />;
+  else if (route.path === '/contact') content = <InfoPage kind="contact" onNavigate={navigate} />;
   else content = <PaperPage className="not-found"><span className="section-kicker">Page turned too far</span><h1>That page is <em>blank.</em></h1><p>Let’s turn back to the notebook.</p><button className="primary-button" onClick={() => navigate('/')}>Back home <ArrowRight size={16} /></button></PaperPage>;
-  return <div className="app-shell"><AppHeader onNavigate={navigate} pathname={route.path} /><main>{content}</main><Footer onNavigate={navigate} /></div>;
+  return <div className="app-shell"><AppHeader onNavigate={navigate} pathname={route.path} /><main>{content}</main><Footer onNavigate={navigate} /><MobileBottomNav onNavigate={navigate} pathname={route.path} /></div>;
 };
 
 const ModeSelector = ({ mode, onChange }: { mode: FlamesMode; onChange: (mode: FlamesMode) => void }) => <fieldset className={`mode-selector mode-${mode}`}>
