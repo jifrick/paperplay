@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 
@@ -73,6 +73,56 @@ afterEach(() => {
 });
 
 describe('PAPERPLAY user flow', () => {
+  it('automatically starts the notebook introduction with all physical layers present', () => {
+    const { container } = render(<App />);
+    const notebook = container.querySelector('[data-notebook-state="closed"]');
+
+    expect(notebook).toBeInTheDocument();
+    expect(notebook).toHaveAttribute('aria-label', 'A pink physical notebook');
+    expect(notebook?.querySelector('[data-notebook-part="back-cover"]')).toBeInTheDocument();
+    expect(notebook?.querySelector('[data-notebook-part="spine"]')).toBeInTheDocument();
+    expect(notebook?.querySelector('[data-notebook-part="paper-block"]')).toBeInTheDocument();
+    expect(notebook?.querySelectorAll('[data-notebook-part="page"]')).toHaveLength(7);
+    expect(notebook?.querySelector('[data-notebook-part="front-cover"]')).toBeInTheDocument();
+    expect(notebook?.querySelector('.pp-book-cover-front')).toBeInTheDocument();
+    expect(notebook).toHaveClass('is-closed');
+  });
+
+  it('uses one explicit timeline and returns to the exact closed state', () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<App />);
+      const notebook = () => container.querySelector('[data-notebook-state]');
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+      act(() => { vi.advanceTimersByTime(260); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'opening');
+      act(() => { vi.advanceTimersByTime(1020); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'flipping');
+      act(() => { vi.advanceTimersByTime(1940); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'holding');
+      act(() => { vi.advanceTimersByTime(550); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closing');
+      act(() => { vi.advanceTimersByTime(2130); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps a stable closed fallback when reduced motion is requested', () => {
+    setReducedMotion(true);
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<App />);
+      const notebook = container.querySelector('[data-notebook-state]');
+      expect(notebook).toHaveClass('is-static', 'is-closed');
+      act(() => { vi.advanceTimersByTime(6000); });
+      expect(notebook).toHaveAttribute('data-notebook-state', 'closed');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('opens the notebook, accepts names, and reveals a FLAMES result', () => {
     openFlames();
     expect(screen.getByRole('heading', { name: 'FLAMES Classic' })).toBeInTheDocument();

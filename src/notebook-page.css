@@ -19,18 +19,7 @@
 }
 
 .app-shell .cover-art {
-  height: 350px;
-}
-
-.app-shell .notebook-cover {
-  width: min(285px, 80%);
-  height: 330px;
-  box-shadow: 9px 14px 0 rgba(89, 47, 57, .06), 18px 24px 28px rgba(89, 47, 57, .14);
-}
-
-.app-shell .paper-shadow {
-  bottom: 16px;
-  box-shadow: 0 10px 20px rgba(80, 55, 55, .06);
+  height: 410px;
 }
 
 /* The page itself is the sheet. Keep content on the red margin and let the
@@ -634,11 +623,7 @@
   }
 
   .app-shell .cover-art {
-    height: 330px;
-  }
-
-  .app-shell .notebook-cover {
-    height: 300px;
+    height: 390px;
   }
 }
 
@@ -654,12 +639,7 @@
   }
 
   .app-shell .cover-art {
-    height: 315px;
-  }
-
-  .app-shell .notebook-cover {
-    width: 230px;
-    height: 285px;
+    height: 360px;
   }
 
   .paper-page.game-page {
