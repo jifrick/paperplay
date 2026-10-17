@@ -64,14 +64,14 @@ describe('sharing safeguards', () => {
     expect(prompt).not.toHaveBeenCalled();
   });
 
-  it('uses an explicit prompt after clipboard rejection', async () => {
+  it('reports cancellation when the explicit prompt is dismissed', async () => {
     Object.defineProperty(navigator, 'share', { configurable: true, writable: true, value: undefined });
     const writeText = vi.fn().mockRejectedValue(new Error('Clipboard unavailable'));
     const prompt = vi.fn().mockReturnValue(null);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, writable: true, value: { writeText } });
     Object.defineProperty(window, 'prompt', { configurable: true, writable: true, value: prompt });
 
-    await expect(shareResult({ title: 'PAPERPLAY', text: 'A result', url: 'https://example.test/result' })).resolves.toBe('manual');
+    await expect(shareResult({ title: 'PAPERPLAY', text: 'A result', url: 'https://example.test/result' })).resolves.toBe('cancelled');
     expect(prompt).toHaveBeenCalledWith('Copy your PAPERPLAY result', 'A result\nhttps://example.test/result');
   });
 

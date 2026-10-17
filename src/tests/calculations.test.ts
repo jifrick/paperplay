@@ -26,7 +26,12 @@ describe('normalization and validation', () => {
   it('explains that A–Z-only games reject non-Latin-only values', () => {
     const validation = validateName('മലയാളം', { latinOnly: true });
     expect(validation.valid).toBe(false);
-    expect(validation.message).toMatch(/A–Z/);
+    expect(validation.message).toMatch(/Latin/);
+  });
+
+  it('enforces the documented grapheme boundary', () => {
+    expect(validateName('A'.repeat(80)).valid).toBe(true);
+    expect(validateName('A'.repeat(81)).valid).toBe(false);
   });
 });
 
@@ -47,10 +52,21 @@ describe('occurrence-aware matching', () => {
     expect(one.totalUnmatchedCount).toBe(two.totalUnmatchedCount);
   });
 
+  it('matches ASCII case independently of the runtime locale', () => {
+    const result = matchLetterOccurrences('i', 'I');
+    expect(result.matchedPairCount).toBe(1);
+    expect(result.totalUnmatchedCount).toBe(0);
+  });
+
   it('does not over-match repeated characters', () => {
     const result = matchLetterOccurrences('AAA', 'A');
     expect(result.matchedPairCount).toBe(1);
     expect(result.unmatchedFirst).toHaveLength(2);
+  });
+
+  it('rejects non-Latin letters for FLAMES without partially calculating them', () => {
+    expect('error' in calculateFlames('Alex', 'Алекс')).toBe(true);
+    expect('error' in calculateFlames('Alex', 'Aлекс')).toBe(true);
   });
 });
 
@@ -106,10 +122,15 @@ describe('Name Number', () => {
     expect(result.second.score).toBe(26);
     expect(result.combinedScore).toBe(27);
     expect(result.category).toBe('Double Trouble');
+    expect(result.unsupportedCharacters).toBe(true);
   });
 
   it('rejects a name with no scorable A–Z letters', () => {
     expect(calculateNameNumber('മലയാളം', 'Alex').status).toBe('invalid');
+  });
+
+  it('rejects accented letters rather than partially scoring them', () => {
+    expect(calculateNameNumber('José', 'Alex').status).toBe('invalid');
   });
 });
 
@@ -137,5 +158,15 @@ describe('Love Meter', () => {
     expect(getLoveMeterBand(89).label).toBe('A Page Full of Similarities');
     expect(getLoveMeterBand(90).label).toBe('Notebook Soulmates');
     expect(getLoveMeterBand(100).label).toBe('Notebook Soulmates');
+    expect(getLoveMeterBand(101).label).toBe('Notebook Soulmates');
+    expect(getLoveMeterBand(-1).label).toBe('Different Pages');
+  });
+
+  it('keeps the documented weighted score separate from the rounded score', () => {
+    const result = calculateLoveMeter('AB', 'CD');
+    expect(result.status).toBe('complete');
+    if (result.status !== 'complete') return;
+    expect(result.score).toBe(20);
+    expect(result.rawScore).toBe(20);
   });
 });

@@ -65,12 +65,18 @@ const useRoute = () => {
 
 const isGameId = (path: string): path is `/games/${GameId}` => Object.values(GAME_PATHS).includes(path);
 
-const Link = ({ href, children, className = '', onNavigate }: { href: string; children: React.ReactNode; className?: string; onNavigate: (href: string) => void }) => (
-  <a className={className} href={href} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey) return; event.preventDefault(); onNavigate(href); }}>{children}</a>
+const Link = ({ href, children, className = '', onNavigate, ariaCurrent }: { href: string; children: React.ReactNode; className?: string; onNavigate: (href: string) => void; ariaCurrent?: 'page' }) => (
+  <a className={className} href={href} aria-current={ariaCurrent} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); onNavigate(href); }}>{children}</a>
 );
 
 const AppHeader = ({ onNavigate, pathname }: { onNavigate: (href: string) => void; pathname: string }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [menuOpen]);
   return (
     <header className={`site-header ${pathname === GAME_PATHS.flames ? 'flames-header' : ''}`}>
       <div className="header-inner">
@@ -79,7 +85,7 @@ const AppHeader = ({ onNavigate, pathname }: { onNavigate: (href: string) => voi
           <span>PAPERPLAY</span>
         </Link>
         <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Main navigation">
-          {navItems.map((item) => <Link key={item.href} href={item.href} onNavigate={(href) => { setMenuOpen(false); onNavigate(href); }} className={pathname === item.href || (item.href === '/games/flames' && pathname.startsWith('/games/')) ? 'active' : ''}>{item.label}</Link>)}
+           {navItems.map((item) => { const active = pathname === item.href || (item.href === '/games/flames' && pathname.startsWith('/games/')); return <Link key={item.href} href={item.href} onNavigate={(href) => { setMenuOpen(false); onNavigate(href); }} className={active ? 'active' : ''} ariaCurrent={active ? 'page' : undefined}>{item.label}</Link>; })}
         </nav>
         <div className="header-actions">
           <Link href="/games/flames" onNavigate={onNavigate} className={`header-cta ${pathname === GAME_PATHS.flames ? 'notebook-button' : ''}`}>Play now <ArrowRight size={15} /></Link>
@@ -114,17 +120,29 @@ const GameCard = ({ game, onNavigate, featured = false }: { game: GameId; onNavi
 
 const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
   const [notebookState, setNotebookState] = useState<NotebookState>('closed');
+  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
   useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!media) return;
+    const update = () => setReducedMotion(media.matches);
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
+  useEffect(() => {
+    if (reducedMotion) {
+      setNotebookState('closed');
+      return;
+    }
     const timers = [
-      window.setTimeout(() => setNotebookState('opening'), 250),
-      window.setTimeout(() => setNotebookState('open'), 1450),
-      window.setTimeout(() => setNotebookState('flipping'), 2050),
-      window.setTimeout(() => setNotebookState('closing'), 3250),
-      window.setTimeout(() => setNotebookState('closed'), 5050),
+      window.setTimeout(() => setNotebookState('opening'), 220),
+      window.setTimeout(() => setNotebookState('open'), 1350),
+      window.setTimeout(() => setNotebookState('flipping'), 1550),
+      window.setTimeout(() => setNotebookState('settling'), 4200),
+      window.setTimeout(() => setNotebookState('closing'), 4650),
+      window.setTimeout(() => setNotebookState('closed'), 5850),
     ];
     return () => timers.forEach(window.clearTimeout);
-  }, []);
+  }, [reducedMotion]);
   const openNotebook = (destination = '/games/flames') => {
     onNavigate(destination);
   };
@@ -161,21 +179,36 @@ const HowItWorks = () => <div className="prose-grid">
 const About = () => <div className="prose-grid single-column"><article className="prose-card"><h2>The brief history of a very important question</h2><p>Someone writes two names. Someone else reaches for a pencil. Matching letters become tiny crossed-out secrets, and suddenly the back of a notebook is the most exciting place in the world.</p><p>PAPERPLAY keeps that feeling without pretending the result knows anything about real life. It is a tactile little ritual for friends, crushes, fictional couples, and anyone who likes a good reveal.</p><div className="quote-card">“The answer was probably already in the notebook.”<span>— an extremely unofficial schoolyard philosopher</span></div></article></div>;
 const Privacy = () => <div className="prose-grid single-column"><article className="prose-card"><h2>What happens to a name?</h2><ul className="check-list"><li><Check size={17} /><span>Core calculations happen entirely in your browser.</span></li><li><Check size={17} /><span>Your names are not stored by default, sent to AI APIs, or logged by PAPERPLAY.</span></li><li><Check size={17} /><span>Names do not go in result URLs. Sharing only happens after you choose it.</span></li><li><Check size={17} /><span>The optional download card is generated locally in your browser.</span></li></ul><p>There are no accounts, databases, analytics scripts, or third-party trackers in this initial release. If that changes, this page will say so plainly.</p></article></div>;
 
+const getPageMetadata = (path: string) => {
+  if (path === '/') return { title: 'PAPERPLAY — Nostalgic notebook games', description: 'PAPERPLAY brings nostalgic school notebook games to life. Write two names and play like old times.' };
+  if (isGameId(path)) {
+    const game = GAME_INFO[path.split('/').pop() as GameId];
+    return { title: `${game.title} — PAPERPLAY`, description: `${game.description} Just for entertainment.` };
+  }
+  if (path === '/how-it-works') return { title: 'How It Works — PAPERPLAY', description: 'Learn the transparent, deterministic rules behind PAPERPLAY notebook games.' };
+  if (path === '/about') return { title: 'About — PAPERPLAY', description: 'Meet PAPERPLAY, a playful digital collection of childhood notebook games.' };
+  if (path === '/privacy') return { title: 'Privacy — PAPERPLAY', description: 'PAPERPLAY runs core calculations in your browser and does not store names by default.' };
+  return { title: 'Page not found — PAPERPLAY', description: 'Turn the page back to PAPERPLAY.' };
+};
+
 export const App = () => {
   const { route, navigate } = useRoute();
-  const pageTitle = route.path === '/' ? 'PAPERPLAY — Nostalgic notebook games' : route.path.includes('how-it-works') ? 'How It Works — PAPERPLAY' : route.path.includes('privacy') ? 'Privacy — PAPERPLAY' : route.path.includes('about') ? 'About — PAPERPLAY' : isGameId(route.path) ? `${GAME_INFO[route.path.split('/').pop() as GameId].title} — PAPERPLAY` : 'Page not found — PAPERPLAY';
-  const pageDescription = route.path === '/' ? 'PAPERPLAY brings nostalgic school notebook games to life. Write two names and play like old times.' : route.path.includes('how-it-works') ? 'Learn the transparent, deterministic rules behind PAPERPLAY notebook games.' : route.path.includes('privacy') ? 'PAPERPLAY runs core calculations in your browser and does not store names by default.' : route.path.includes('about') ? 'Meet PAPERPLAY, a playful digital collection of childhood notebook games.' : isGameId(route.path) ? `${GAME_INFO[route.path.split('/').pop() as GameId].description} Just for entertainment.` : 'Turn the page back to PAPERPLAY.';
+  const { title: pageTitle, description: pageDescription } = getPageMetadata(route.path);
   useEffect(() => {
     document.title = pageTitle;
-    let description = document.querySelector('meta[name="description"]');
-    if (!description) { description = document.createElement('meta'); description.setAttribute('name', 'description'); document.head.appendChild(description); }
-    description.setAttribute('content', pageDescription);
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) { ogTitle = document.createElement('meta'); ogTitle.setAttribute('property', 'og:title'); document.head.appendChild(ogTitle); }
-    ogTitle.setAttribute('content', pageTitle);
-    let ogDescription = document.querySelector('meta[property="og:description"]');
-    if (!ogDescription) { ogDescription = document.createElement('meta'); ogDescription.setAttribute('property', 'og:description'); document.head.appendChild(ogDescription); }
-    ogDescription.setAttribute('content', pageDescription);
+    const setMeta = (selector: string, attributes: Record<string, string>, content: string) => {
+      let element = document.querySelector<HTMLMetaElement>(selector);
+      if (!element) { element = document.createElement('meta'); Object.entries(attributes).forEach(([key, value]) => element!.setAttribute(key, value)); document.head.appendChild(element); }
+      element.setAttribute('content', content);
+    };
+    setMeta('meta[name="description"]', { name: 'description' }, pageDescription);
+    setMeta('meta[property="og:title"]', { property: 'og:title' }, pageTitle);
+    setMeta('meta[property="og:description"]', { property: 'og:description' }, pageDescription);
+    setMeta('meta[property="og:type"]', { property: 'og:type' }, 'website');
+    setMeta('meta[property="og:url"]', { property: 'og:url' }, new URL(route.path, window.location.origin).toString());
+    setMeta('meta[name="twitter:card"]', { name: 'twitter:card' }, 'summary_large_image');
+    setMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, pageTitle);
+    setMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, pageDescription);
     let canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) { canonical = document.createElement('link'); canonical.setAttribute('rel', 'canonical'); document.head.appendChild(canonical); }
     canonical.setAttribute('href', new URL(route.path, window.location.origin).toString());
@@ -302,13 +335,14 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const Icon = info.icon;
   const firstName = useMemo(() => names.first ? matchLetterOccurrences(names.first, '').first : null, [names.first]);
   const secondName = useMemo(() => names.second ? matchLetterOccurrences(names.second, '').first : null, [names.second]);
+  const hasNonLatinName = Boolean(firstName?.units.some((unit) => !unit.isLatin) || secondName?.units.some((unit) => !unit.isLatin));
   return <PaperPage className={`game-page game-${game} accent-${info.accent}`}>
      <div className="game-breadcrumb"><button type="button" className="notebook-button back-link" onClick={() => onNavigate('/')}><ArrowRight size={15} className="back-arrow" /> All games</button><span> / {info.title}</span></div>
      <div className="game-heading"><div><span className="section-kicker"><Icon size={15} /> {info.eyebrow}</span><h1>{info.title}</h1><p>{info.description}</p></div><span className="page-number">p. {game === 'flames' ? '01' : game === 'name-number' ? '02' : '03'}</span></div>
     <form className="game-form" onSubmit={(event) => { event.preventDefault(); calculate(); }} noValidate>
        
        <div className="name-inputs"><NotebookNameField id={`${game}-first-name`} label="First name" value={names.first} active={activeField === 'first'} reducedMotion={reducedMotion} inputRef={firstInput} onFocus={() => setActiveField('first')} onChange={(value) => updateName('first', value)} onEnter={calculate} /><div className="plus-mark" aria-hidden="true">+</div><NotebookNameField id={`${game}-second-name`} label="Second name" value={names.second} active={activeField === 'second'} reducedMotion={reducedMotion} inputRef={secondInput} onFocus={() => setActiveField('second')} onChange={(value) => updateName('second', value)} onEnter={calculate} /></div>
-      {(firstName?.hasUnsupportedCharacters || secondName?.hasUnsupportedCharacters) && <p className="input-note"><Info size={14} /> Spaces and punctuation are ignored. Symbols and emoji are shown for context but do not count; {game === 'name-number' || game === 'love-meter' ? 'this page scores A–Z letters only.' : 'letter graphemes are matched one at a time.'}</p>}
+       {(firstName?.hasUnsupportedCharacters || secondName?.hasUnsupportedCharacters) && <p className="input-note"><Info size={14} /> {hasNonLatinName ? 'Non-Latin letters are not supported by the current notebook games.' : `Spaces and punctuation are ignored. Symbols and emoji are shown for context but do not count; ${game === 'name-number' || game === 'love-meter' ? 'this page scores A–Z letters only.' : 'Latin-script letter graphemes are matched one at a time.'}`}</p>}
         <div className="tool-bar compact-tools"><div className="tool-buttons"><button type="button" className="notebook-button tool-button" onClick={undo} disabled={!history.length}><Undo2 size={16} /> Undo</button><button type="button" className="notebook-button tool-button" onClick={reset}><RotateCcw size={16} /> Reset</button></div></div>
        <div className="form-submit"><button type="submit" className="notebook-button primary-button large"><Play size={17} fill="currentColor" /> Calculate {game === 'flames' ? 'FLAMES' : 'result'} <ArrowRight size={17} /></button><span>Press Enter anytime. You can edit names after a result.</span></div>
       {error && <p className="form-error" role="alert"><X size={16} /> {error}</p>}

@@ -2,7 +2,7 @@ import { Component, lazy, Suspense, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import './PhysicalNotebook.css';
 
-export type NotebookState = 'closed' | 'opening' | 'open' | 'flipping' | 'closing';
+export type NotebookState = 'closed' | 'opening' | 'open' | 'flipping' | 'settling' | 'closing';
 
 export type PhysicalNotebookProps = {
   state: NotebookState;
@@ -60,7 +60,7 @@ export const PhysicalNotebook = ({ state }: PhysicalNotebookProps) => {
   }, []);
 
   const staticView = reducedMotion || !webglAvailable;
-  return <div className={`pp-book-scene is-${state} ${staticView ? 'is-static' : 'is-webgl'}`} data-notebook-state={state} aria-label="A pink physical notebook" role="img">
+  return <div className={`pp-book-scene is-${state} ${staticView ? 'is-static' : 'is-webgl'}`} data-notebook-state={state} data-turning-pages="5" aria-label="A pink physical notebook" role="img">
     {staticView ? <StaticNotebook /> : <WebGLBoundary><Suspense fallback={<StaticNotebook />}><WebGLNotebook state={state} /></Suspense></WebGLBoundary>}
   </div>;
 };

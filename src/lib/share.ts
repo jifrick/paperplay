@@ -19,8 +19,8 @@ export const shareResult = async (payload: SharePayload): Promise<ShareOutcome> 
     }
   }
   if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-    window.prompt('Copy your PAPERPLAY result', `${payload.text}\n${payload.url}`);
-    return 'manual';
+    const value = window.prompt('Copy your PAPERPLAY result', `${payload.text}\n${payload.url}`);
+    return value === null ? 'cancelled' : 'manual';
   }
   return 'failed';
 };

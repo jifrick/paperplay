@@ -22,10 +22,10 @@ The initial workspace was a Windows home directory, not a repository. No PAPERPL
 
 - A new dedicated app avoids overwriting unrelated home-directory work.
 - Lightweight History API routing; static deployment must rewrite navigation requests to the app shell.
-- CSS animations are sufficient; no animation library is needed for these small transitions.
+- The homepage notebook uses a lazy-loaded Three.js/React Three Fiber scene for grounded cover and page geometry; the rest of the UI remains CSS/React.
 - Shared matching accepts NFC-normalized Latin-script letter graphemes (including accents, without stripping or transliterating them). Non-Latin letters, mixed unsupported scripts, digits, emoji and symbols receive explicit validation. Spaces and punctuation are ignored. Name Number accepts A–Z only and explains accented/non-Latin exclusions. No partial, silently misleading calculation.
 - Limit each name to 80 graphemes and reject longer pasted values with visible validation; never silently truncate a result. Inputs remain fully editable.
-- Segmentation uses `Intl.Segmenter`; browsers without it receive a friendly requirement message rather than incorrect fallback indexing.
+- Segmentation uses `Intl.Segmenter` when available and a Unicode-aware code-point fallback that keeps combining marks, variation selectors, skin tones, and ZWJ sequences together.
 - Original names remain ephemeral React state. No names in URLs, filenames, local storage, logs, telemetry or third-party requests. Native sharing sends only the user-requested payload.
 - The public domain is not provided. Deployment must set a real site origin before generating canonical/sitemap/social URLs; no invented production domain is claimed.
 - Sound, haptics, freehand input, PWA, multiplayer and analytics remain future enhancements as specified.
@@ -39,9 +39,9 @@ Record commands and actual outcomes at every gate below; no unrun checks count a
 - `node --version; npm --version` in `paperplay/`: Node `v24.11.1`, npm `11.6.2`.
 - `npm install`: completed successfully. `jsdom` is pinned to `^29.0.0` so the installed test environment supports the available Node runtime.
 - `npm run typecheck`: passed.
-- `npm test`: passed, 3 test files and 25 tests.
+- `npm test -- --run`: passed, 4 test files and 58 tests at the last recorded verification; rerun after each change.
 - `npm run build`: passed; Vite emitted a production `dist/` bundle.
 - `npm run dev` plus HTTP smoke checks: `/` and `/games/flames` returned HTTP 200.
 - `npm run preview` plus HTTP smoke checks: `/`, the three visible `/games/*` routes, `/how-it-works`, `/about`, and `/privacy` returned HTTP 200.
 
-No lint script is configured in this new app, so lint was not claimed as a pass. Browser automation was not included in the repository; React Testing Library integration tests and preview route checks are the repeatable automated coverage currently provided. A final hands-on check should still be made in a real browser at 320px and desktop widths before public launch.
+No lint script is configured in this new app, so lint was not claimed as a pass. Browser automation was not included in the repository; React Testing Library integration tests and preview route checks are the repeatable automated coverage currently provided. The WebGL notebook path is not exercised by jsdom tests, so a final hands-on check is still required in a real browser at 320px, tablet, and desktop widths before public launch.

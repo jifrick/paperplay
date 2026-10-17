@@ -28,10 +28,12 @@ const makeCanvasContext = () => {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers();
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   restoreProperty(URL, 'createObjectURL', originalCreateObjectURL);
   restoreProperty(URL, 'revokeObjectURL', originalRevokeObjectURL);
@@ -64,6 +66,8 @@ describe('downloadResultCard', () => {
     expect(clickedAnchor?.download).toBe('flames-classic-result.png');
     expect(clickedAnchor?.download).not.toMatch(/Anna|Aman/);
     expect(createObjectURL).toHaveBeenCalledWith(blob);
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:paperplay-result');
     expect(fillText).toHaveBeenCalledWith('Anna + Aman', 150, 320);
   });

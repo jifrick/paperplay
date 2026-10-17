@@ -22,10 +22,13 @@ export type LoveMeterCalculation = {
   unsupportedCharacters: boolean;
 };
 
-export const getLoveMeterBand = (score: number) => LOVE_METER_BANDS.find((band) => score >= band.min && score <= band.max) ?? LOVE_METER_BANDS[0];
+export const getLoveMeterBand = (score: number) => {
+  const boundedScore = Math.max(0, Math.min(100, score));
+  return LOVE_METER_BANDS.find((band) => boundedScore >= band.min && boundedScore <= band.max) ?? LOVE_METER_BANDS[0];
+};
 
 export const calculateLoveMeter = (first: string, second: string): LoveMeterCalculation | { status: 'invalid'; error: string } => {
-  const validation = validatePair(first, second, { latinOnly: true });
+  const validation = validatePair(first, second, { asciiOnly: true });
   if (!validation.valid) return { status: 'invalid', error: validation.first.valid ? validation.second.message! : validation.first.message! };
   const matches = matchAsciiLetters(first, second);
   const firstLength = matches.first.asciiLatinUnits.length;
@@ -33,7 +36,7 @@ export const calculateLoveMeter = (first: string, second: string): LoveMeterCalc
   const maxLength = Math.max(firstLength, secondLength);
   const overlap = matches.matchedPairCount / maxLength;
   const lengthBalance = Math.min(firstLength, secondLength) / maxLength;
-  const rawScore = Math.round(100 * (0.8 * overlap + 0.2 * lengthBalance));
-  const score = Math.max(0, Math.min(100, rawScore));
-  return { status: 'complete', score, band: getLoveMeterBand(score), firstLength, secondLength, matchedPairs: matches.matchedPairCount, overlap, lengthBalance, rawScore, unsupportedCharacters: validation.first.normalized.units.length !== firstLength || validation.second.normalized.units.length !== secondLength };
+  const rawScore = 100 * (0.8 * overlap + 0.2 * lengthBalance);
+  const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+  return { status: 'complete', score, band: getLoveMeterBand(score), firstLength, secondLength, matchedPairs: matches.matchedPairCount, overlap, lengthBalance, rawScore, unsupportedCharacters: validation.first.normalized.hasUnsupportedCharacters || validation.second.normalized.hasUnsupportedCharacters };
 };

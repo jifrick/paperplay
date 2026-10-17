@@ -79,6 +79,7 @@ describe('PAPERPLAY user flow', () => {
 
     expect(notebook).toBeInTheDocument();
     expect(notebook).toHaveAttribute('aria-label', 'A pink physical notebook');
+    expect(notebook).toHaveAttribute('data-turning-pages', '5');
     expect(notebook?.querySelector('[data-notebook-part="back-cover"]')).toBeInTheDocument();
     expect(notebook?.querySelector('[data-notebook-part="spine"]')).toBeInTheDocument();
     expect(notebook?.querySelector('[data-notebook-part="paper-block"]')).toBeInTheDocument();
@@ -94,15 +95,17 @@ describe('PAPERPLAY user flow', () => {
       const { container } = render(<App />);
       const notebook = () => container.querySelector('[data-notebook-state]');
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
-      act(() => { vi.advanceTimersByTime(250); });
+      act(() => { vi.advanceTimersByTime(220); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'opening');
-      act(() => { vi.advanceTimersByTime(1200); });
+      act(() => { vi.advanceTimersByTime(1130); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'open');
-      act(() => { vi.advanceTimersByTime(600); });
+      act(() => { vi.advanceTimersByTime(200); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'flipping');
-      act(() => { vi.advanceTimersByTime(1200); });
+      act(() => { vi.advanceTimersByTime(2650); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'settling');
+      act(() => { vi.advanceTimersByTime(450); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closing');
-      act(() => { vi.advanceTimersByTime(1800); });
+      act(() => { vi.advanceTimersByTime(1200); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
     } finally {
       vi.useRealTimers();

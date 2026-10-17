@@ -13,6 +13,7 @@ export type NormalizedName = {
   units: NameUnit[];
   latinUnits: NameUnit[];
   asciiLatinUnits: NameUnit[];
+  inputGraphemeCount: number;
   hasUnsupportedCharacters: boolean;
 };
 
@@ -32,7 +33,7 @@ export const segmentGraphemes = (value: string): string[] => {
   const segments: string[] = [];
   for (const codePoint of Array.from(value)) {
     const previous = segments.at(-1);
-    const joinsPrevious = Boolean(previous && (previous.endsWith('\u200D') || /^\p{M}/u.test(codePoint) || /[\uFE0E\uFE0F]/u.test(codePoint) || /[\u{1F3FB}-\u{1F3FF}]/u.test(codePoint)));
+    const joinsPrevious = Boolean(previous && (codePoint === '\u200D' || previous.endsWith('\u200D') || /^\p{M}/u.test(codePoint) || /[\uFE0E\uFE0F]/u.test(codePoint) || /[\u{1F3FB}-\u{1F3FF}]/u.test(codePoint)));
     if (joinsPrevious) segments[segments.length - 1] += codePoint;
     else segments.push(codePoint);
   }
@@ -45,10 +46,11 @@ const isAsciiLatin = (value: string): boolean => /^[A-Za-z]$/.test(value);
 
 export const normalizeName = (input: string): NormalizedName => {
   const display = input.trim().normalize('NFC');
-  const units: NameUnit[] = segmentGraphemes(display)
+  const graphemes = segmentGraphemes(display);
+  const units: NameUnit[] = graphemes
     .map((value, sourceIndex) => ({
       value,
-      key: value.toLocaleUpperCase(),
+      key: value.toUpperCase(),
       sourceIndex,
       isLatin: isLatin(value),
       isAsciiLatin: isAsciiLatin(value),
@@ -62,12 +64,13 @@ export const normalizeName = (input: string): NormalizedName => {
     units,
     latinUnits: units.filter((unit) => unit.isLatin),
     asciiLatinUnits: units.filter((unit) => unit.isAsciiLatin),
-    hasUnsupportedCharacters: segmentGraphemes(display).some((value) => !isLetter(value) && !/^\s+$/u.test(value)),
+    inputGraphemeCount: graphemes.length,
+    hasUnsupportedCharacters: graphemes.some((value) => !/^\s+$/u.test(value) && (!isLetter(value) || !isLatin(value))),
   };
 };
 
 export const getNameHint = (name: NormalizedName): string | undefined => {
   if (name.units.length === 0) return 'Enter at least one letter.';
-  if (name.latinUnits.length !== name.units.length) return 'Non-Latin letters are matched as graphemes, but A–Z-only games will explain their limitation.';
+  if (name.latinUnits.length !== name.units.length) return 'Non-Latin letters are not supported by the current notebook games.';
   return undefined;
 };

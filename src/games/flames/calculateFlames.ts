@@ -8,7 +8,7 @@ export const FLAMES_MEANINGS: Record<FlamesLetter, FlamesCategory> = {
 };
 
 export const calculateFlames = (first: string, second: string, mode: FlamesMode = 'crush'): FlamesResult | { error: string } => {
-  const validation = validatePair(first, second);
+  const validation = validatePair(first, second, { latinOnly: true });
   if (!validation.valid) return { error: validation.first.valid ? validation.second.message! : validation.first.message! };
   const matches = matchLetterOccurrences(first, second);
   const base: Omit<FlamesResult, 'status' | 'rounds' | 'finalLetter' | 'category' | 'edgeCaseMessage'> = {

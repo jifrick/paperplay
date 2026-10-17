@@ -6,9 +6,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import type { NotebookState } from './PhysicalNotebook';
 
 const PAGE_COUNT = 7;
-// Keep the stack visible, but prove the hinge and bend with one excellent
-// sheet before introducing another moving surface.
-const TURNING_PAGES = 1;
+const TURNING_PAGES = 5;
 const NOTEBOOK_WIDTH = 2.78;
 const NOTEBOOK_HEIGHT = 3.34;
 const HINGE_X = 0;
@@ -115,6 +113,24 @@ const makeCoverTexture = (inside = false) => {
   return texture;
 };
 
+const makeShadowTexture = () => {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 192;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  const gradient = context.createRadialGradient(128, 96, 12, 128, 96, 112);
+  gradient.addColorStop(0, 'rgba(82, 47, 57, .26)');
+  gradient.addColorStop(.55, 'rgba(82, 47, 57, .12)');
+  gradient.addColorStop(1, 'rgba(82, 47, 57, 0)');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+};
+
 const createSheetGeometry = () => {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -145,6 +161,18 @@ const createSheetGeometry = () => {
   return geometry;
 };
 
+const updateSheetCurl = (geometry: THREE.BufferGeometry, curl: number) => {
+  const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
+  for (let index = 0; index < positions.count; index += 1) {
+    const x = positions.getX(index) / NOTEBOOK_WIDTH;
+    const edgeLift = Math.pow(x, 1.8) * curl * 0.24;
+    const bow = Math.sin(Math.PI * x) * curl * 0.16;
+    positions.setY(index, edgeLift + bow);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+};
+
 type AnimationContext = { state: NotebookState; time: MutableRefObject<number> };
 const AnimationContext = createContext<AnimationContext | null>(null);
 
@@ -152,10 +180,13 @@ const getPageProgress = (state: NotebookState, time: number, pageIndex: number) 
   if (state === 'closed' || state === 'opening' || state === 'open') return 0;
   if (state === 'flipping') {
     if (pageIndex >= TURNING_PAGES) return 0;
-    return easeInOut(time / 0.96);
+    const delay = pageIndex * 0.45;
+    const duration = 0.72 + pageIndex * 0.015;
+    return easeInOut((time - delay) / duration);
   }
+  if (state === 'settling') return pageIndex < TURNING_PAGES ? 1 : 0;
   if (pageIndex >= TURNING_PAGES) return 0;
-  return 1 - easeInOut(time / 0.78);
+  return 1 - easeInOut(time / 0.7);
 };
 
 const RoundedBoxMesh = ({ size, radius, smoothness, position, children }: { size: [number, number, number]; radius: number; smoothness: number; position?: [number, number, number]; children: ReactNode }) => {
@@ -178,24 +209,26 @@ const NotebookSheet = ({ pageIndex }: { pageIndex: number }) => {
     backTexture?.dispose();
   }, [backTexture, frontTexture, geometry]);
 
+  useEffect(() => {
+    if (animation?.state === 'closed' && group.current) {
+      group.current.rotation.z = 0;
+      group.current.position.y = 0.09 + (PAGE_COUNT - 1 - pageIndex) * 0.004;
+      updateSheetCurl(geometry, 0);
+      previousProgress.current = 0;
+    }
+  }, [animation?.state, geometry, pageIndex]);
+
   useFrame(() => {
     if (!animation || !group.current) return;
     const progress = getPageProgress(animation.state, animation.time.current, pageIndex);
     // The spine runs along Z, so the sheet turns around Z from the right
     // half of the notebook to the left half, passing through a real lift.
     group.current.rotation.z = progress * Math.PI;
-    group.current.position.y = 0.09 + (PAGE_COUNT - 1 - pageIndex) * 0.004;
+    const stackY = 0.09 + (PAGE_COUNT - 1 - pageIndex) * 0.004;
+    group.current.position.y = stackY + Math.sin(progress * Math.PI) * 0.055;
     const curl = Math.sin(progress * Math.PI);
     if (Math.abs(progress - previousProgress.current) > 0.0005) {
-      const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
-      for (let index = 0; index < positions.count; index += 1) {
-        const x = positions.getX(index) / NOTEBOOK_WIDTH;
-        const edgeLift = Math.pow(x, 1.8) * curl * 0.24;
-        const bow = Math.sin(Math.PI * x) * curl * 0.16;
-        positions.setY(index, edgeLift + bow);
-      }
-      positions.needsUpdate = true;
-      geometry.computeVertexNormals();
+      updateSheetCurl(geometry, curl);
       previousProgress.current = progress;
     }
   });
@@ -224,25 +257,31 @@ const NotebookModel = ({ state }: { state: NotebookState }) => {
   const animation = useMemo<AnimationContext>(() => ({ state, time }), [state]);
   const coverTexture = useMemo(() => makeCoverTexture(false), []);
   const insideTexture = useMemo(() => makeCoverTexture(true), []);
+  const shadowTexture = useMemo(makeShadowTexture, []);
 
   useEffect(() => {
     time.current = 0;
   }, [state]);
 
+  useEffect(() => {
+    if (state === 'closed' && cover.current) cover.current.rotation.z = 0;
+  }, [state]);
+
   useEffect(() => () => {
     coverTexture?.dispose();
     insideTexture?.dispose();
-  }, [coverTexture, insideTexture]);
+    shadowTexture?.dispose();
+  }, [coverTexture, insideTexture, shadowTexture]);
 
   useFrame((_, delta) => {
     time.current += delta;
     if (!cover.current) return;
     let coverProgress = 0;
     if (state === 'opening') coverProgress = easeInOut(time.current / 0.96);
-    if (state === 'open' || state === 'flipping') coverProgress = 1;
+    if (state === 'open' || state === 'flipping' || state === 'settling') coverProgress = 1;
     // Keep the cover open while the sheet returns to the stack, then reverse
     // the same hinge motion instead of swapping to a closed pose.
-    if (state === 'closing') coverProgress = 1 - easeInOut((time.current - 0.9) / 0.82);
+    if (state === 'closing') coverProgress = 1 - easeInOut((time.current - 0.42) / 0.72);
     // The front cover shares the same Z-axis hinge as the paper.
     cover.current.rotation.z = coverProgress * Math.PI;
   });
@@ -275,9 +314,9 @@ const NotebookModel = ({ state }: { state: NotebookState }) => {
         <CoverArtwork texture={insideTexture} position={[NOTEBOOK_WIDTH / 2, -COVER_DEPTH / 2 - 0.008, 0]} rotation={[Math.PI / 2, 0, 0]} />
       </group>
     </group>
-    <mesh position={[0, -0.28, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.8, 0.72, 1]}>
-      <planeGeometry args={[5.2, 3.9]} />
-      <meshBasicMaterial color="#603847" transparent opacity={0.12} depthWrite={false} />
+    <mesh position={[NOTEBOOK_WIDTH / 2, -0.29, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[3.7, 4.15]} />
+      <meshBasicMaterial map={shadowTexture ?? undefined} transparent opacity={0.86} depthWrite={false} />
     </mesh>
   </AnimationContext.Provider>;
 };

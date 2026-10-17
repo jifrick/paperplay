@@ -65,5 +65,5 @@ export const downloadResultCard = async (options: CardOptions): Promise<void> =>
   link.href = url;
   link.download = `${safeFilename(options.game)}-result.png`;
   link.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 };
