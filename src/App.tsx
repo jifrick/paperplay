@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { NotebookNameField } from './components/NotebookNameField';
 import { PhysicalNotebook } from './components/PhysicalNotebook';
+import type { NotebookState } from './components/PhysicalNotebook';
 import { calculateFlames, FLAMES_MEANINGS } from './games/flames/calculateFlames';
 import { RESULT_COPY, MODE_LABELS } from './games/flames/flames.copy';
 import { FlamesMode, FlamesResult } from './games/flames/flames.types';
@@ -112,15 +113,15 @@ const GameCard = ({ game, onNavigate, featured = false }: { game: GameId; onNavi
 };
 
 const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
-  const [notebookState, setNotebookState] = useState<'closed' | 'opening' | 'flipping' | 'holding' | 'closing'>('closed');
+  const [notebookState, setNotebookState] = useState<NotebookState>('closed');
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const timers = [
-      window.setTimeout(() => setNotebookState('opening'), 260),
-      window.setTimeout(() => setNotebookState('flipping'), 1280),
-      window.setTimeout(() => setNotebookState('holding'), 3220),
-      window.setTimeout(() => setNotebookState('closing'), 3770),
-      window.setTimeout(() => setNotebookState('closed'), 5900),
+      window.setTimeout(() => setNotebookState('opening'), 250),
+      window.setTimeout(() => setNotebookState('open'), 1450),
+      window.setTimeout(() => setNotebookState('flipping'), 2050),
+      window.setTimeout(() => setNotebookState('closing'), 3250),
+      window.setTimeout(() => setNotebookState('closed'), 5050),
     ];
     return () => timers.forEach(window.clearTimeout);
   }, []);

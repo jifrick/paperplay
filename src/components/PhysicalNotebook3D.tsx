@@ -6,10 +6,12 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import type { NotebookState } from './PhysicalNotebook';
 
 const PAGE_COUNT = 7;
-const TURNING_PAGES = 5;
+// Keep the stack visible, but prove the hinge and bend with one excellent
+// sheet before introducing another moving surface.
+const TURNING_PAGES = 1;
 const NOTEBOOK_WIDTH = 2.78;
 const NOTEBOOK_HEIGHT = 3.34;
-const HINGE_X = -NOTEBOOK_WIDTH / 2;
+const HINGE_X = 0;
 const COVER_DEPTH = 0.13;
 const PAPER_DEPTH = 0.18;
 const PAGE_SEGMENTS_X = 12;
@@ -121,7 +123,7 @@ const createSheetGeometry = () => {
     const v = row / PAGE_SEGMENTS_Y;
     for (let column = 0; column <= PAGE_SEGMENTS_X; column += 1) {
       const u = column / PAGE_SEGMENTS_X;
-      positions.push(u * NOTEBOOK_WIDTH, (0.5 - v) * NOTEBOOK_HEIGHT, 0);
+      positions.push(u * NOTEBOOK_WIDTH, 0, (0.5 - v) * NOTEBOOK_HEIGHT);
       uvs.push(u, 1 - v);
     }
   }
@@ -132,7 +134,7 @@ const createSheetGeometry = () => {
       const topRight = topLeft + 1;
       const bottomLeft = topLeft + columns;
       const bottomRight = bottomLeft + 1;
-      indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+      indices.push(topLeft, topRight, bottomLeft, topRight, bottomRight, bottomLeft);
     }
   }
   const geometry = new THREE.BufferGeometry();
@@ -147,15 +149,13 @@ type AnimationContext = { state: NotebookState; time: MutableRefObject<number> }
 const AnimationContext = createContext<AnimationContext | null>(null);
 
 const getPageProgress = (state: NotebookState, time: number, pageIndex: number) => {
-  if (state === 'closed' || state === 'opening') return 0;
-  if (state === 'holding') return pageIndex < TURNING_PAGES ? 1 : 0;
+  if (state === 'closed' || state === 'opening' || state === 'open') return 0;
   if (state === 'flipping') {
     if (pageIndex >= TURNING_PAGES) return 0;
-    return easeInOut((time - pageIndex * 0.28) / 0.66);
+    return easeInOut(time / 0.96);
   }
   if (pageIndex >= TURNING_PAGES) return 0;
-  const delay = 0.12 + (TURNING_PAGES - 1 - pageIndex) * 0.12;
-  return 1 - easeInOut((time - delay) / 0.64);
+  return 1 - easeInOut(time / 0.78);
 };
 
 const RoundedBoxMesh = ({ size, radius, smoothness, position, children }: { size: [number, number, number]; radius: number; smoothness: number; position?: [number, number, number]; children: ReactNode }) => {
@@ -181,14 +181,18 @@ const NotebookSheet = ({ pageIndex }: { pageIndex: number }) => {
   useFrame(() => {
     if (!animation || !group.current) return;
     const progress = getPageProgress(animation.state, animation.time.current, pageIndex);
-    group.current.rotation.y = progress * Math.PI;
-    group.current.position.z = 0.012 + pageIndex * 0.006;
-    const bend = Math.sin(progress * Math.PI) * 0.22;
+    // The spine runs along Z, so the sheet turns around Z from the right
+    // half of the notebook to the left half, passing through a real lift.
+    group.current.rotation.z = progress * Math.PI;
+    group.current.position.y = 0.09 + (PAGE_COUNT - 1 - pageIndex) * 0.004;
+    const curl = Math.sin(progress * Math.PI);
     if (Math.abs(progress - previousProgress.current) > 0.0005) {
       const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
       for (let index = 0; index < positions.count; index += 1) {
         const x = positions.getX(index) / NOTEBOOK_WIDTH;
-        positions.setZ(index, Math.sin(Math.PI * x) * bend);
+        const edgeLift = Math.pow(x, 1.8) * curl * 0.24;
+        const bow = Math.sin(Math.PI * x) * curl * 0.16;
+        positions.setY(index, edgeLift + bow);
       }
       positions.needsUpdate = true;
       geometry.computeVertexNormals();
@@ -196,8 +200,8 @@ const NotebookSheet = ({ pageIndex }: { pageIndex: number }) => {
     }
   });
 
-  return <group ref={group} position={[HINGE_X, 0, 0.012 + pageIndex * 0.006]}>
-    <mesh geometry={geometry}>
+  return <group ref={group} position={[HINGE_X, 0.09 + (PAGE_COUNT - 1 - pageIndex) * 0.004, 0]}>
+    <mesh geometry={geometry} position={[0, -0.006, 0]}>
       <meshStandardMaterial map={frontTexture ?? undefined} color="#fff8ed" roughness={0.86} side={THREE.FrontSide} />
     </mesh>
     <mesh geometry={geometry}>
@@ -217,7 +221,6 @@ const CoverArtwork = ({ texture, position, rotation = [0, 0, 0] }: { texture: TH
 const NotebookModel = ({ state }: { state: NotebookState }) => {
   const time = useRef(0);
   const cover = useRef<THREE.Group>(null);
-  const stage = useRef<THREE.Group>(null);
   const animation = useMemo<AnimationContext>(() => ({ state, time }), [state]);
   const coverTexture = useMemo(() => makeCoverTexture(false), []);
   const insideTexture = useMemo(() => makeCoverTexture(true), []);
@@ -233,53 +236,53 @@ const NotebookModel = ({ state }: { state: NotebookState }) => {
 
   useFrame((_, delta) => {
     time.current += delta;
-    if (!cover.current || !stage.current) return;
+    if (!cover.current) return;
     let coverProgress = 0;
     if (state === 'opening') coverProgress = easeInOut(time.current / 0.96);
-    if (state === 'flipping' || state === 'holding') coverProgress = 1;
-    // The pages finish re-stacking before the cover leaves its open pose.
-    if (state === 'closing') coverProgress = easeInOut((time.current - 1.18) / 0.72);
-    cover.current.rotation.y = coverProgress * Math.PI;
-    cover.current.rotation.z = -0.035 * (1 - coverProgress);
-    stage.current.position.y = state === 'closed' ? 0 : Math.sin(Math.min(time.current, 1) * Math.PI) * 0.035;
+    if (state === 'open' || state === 'flipping') coverProgress = 1;
+    // Keep the cover open while the sheet returns to the stack, then reverse
+    // the same hinge motion instead of swapping to a closed pose.
+    if (state === 'closing') coverProgress = 1 - easeInOut((time.current - 0.9) / 0.82);
+    // The front cover shares the same Z-axis hinge as the paper.
+    cover.current.rotation.z = coverProgress * Math.PI;
   });
 
   return <AnimationContext.Provider value={animation}>
-    <group ref={stage} rotation={[-0.12, 0.02, -0.025]}>
-      <RoundedBoxMesh size={[NOTEBOOK_WIDTH, NOTEBOOK_HEIGHT, COVER_DEPTH]} radius={0.11} smoothness={4} position={[0, 0, -0.16]}>
+    <group>
+      <RoundedBoxMesh size={[NOTEBOOK_WIDTH, COVER_DEPTH, NOTEBOOK_HEIGHT]} radius={0.11} smoothness={4} position={[NOTEBOOK_WIDTH / 2, -0.16, 0]}>
         <meshStandardMaterial color="#df637d" roughness={0.74} />
       </RoundedBoxMesh>
-      <RoundedBoxMesh size={[NOTEBOOK_WIDTH - 0.04, NOTEBOOK_HEIGHT - 0.04, PAPER_DEPTH]} radius={0.08} smoothness={3} position={[0, 0, -0.015]}>
+      <RoundedBoxMesh size={[NOTEBOOK_WIDTH - 0.04, PAPER_DEPTH, NOTEBOOK_HEIGHT - 0.04]} radius={0.08} smoothness={3} position={[NOTEBOOK_WIDTH / 2, -0.015, 0]}>
         <meshStandardMaterial color="#fff8ed" roughness={0.96} />
       </RoundedBoxMesh>
       {Array.from({ length: PAGE_COUNT }, (_, pageIndex) => <NotebookSheet key={pageIndex} pageIndex={pageIndex} />)}
 
-      <group position={[HINGE_X - 0.045, 0, 0.1]}>
-        <RoundedBoxMesh size={[0.14, NOTEBOOK_HEIGHT - 0.02, 0.2]} radius={0.06} smoothness={3}>
+      <group position={[HINGE_X - 0.045, 0.1, 0]}>
+        <RoundedBoxMesh size={[0.14, 0.2, NOTEBOOK_HEIGHT - 0.02]} radius={0.06} smoothness={3}>
           <meshStandardMaterial color="#b94f69" roughness={0.62} />
         </RoundedBoxMesh>
-        {Array.from({ length: 5 }, (_, index) => <mesh key={index} position={[0.02, 1.12 - index * 0.56, 0.12]} rotation={[Math.PI / 2, 0, 0]}>
+        {Array.from({ length: 5 }, (_, index) => <mesh key={index} position={[0.02, 0.12, 1.12 - index * 0.56]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.12, 0.024, 8, 18, Math.PI * 1.22]} />
           <meshStandardMaterial color="#9f3f59" roughness={0.55} />
         </mesh>)}
       </group>
 
-      <group ref={cover} position={[HINGE_X, 0, 0.19]}>
-        <RoundedBoxMesh size={[NOTEBOOK_WIDTH, NOTEBOOK_HEIGHT, COVER_DEPTH]} radius={0.11} smoothness={4} position={[NOTEBOOK_WIDTH / 2, 0, 0]}>
+      <group ref={cover} position={[HINGE_X, 0.16, 0]}>
+        <RoundedBoxMesh size={[NOTEBOOK_WIDTH, COVER_DEPTH, NOTEBOOK_HEIGHT]} radius={0.11} smoothness={4} position={[NOTEBOOK_WIDTH / 2, 0, 0]}>
           <meshStandardMaterial color="#ea7088" roughness={0.68} />
         </RoundedBoxMesh>
-        <CoverArtwork texture={coverTexture} position={[NOTEBOOK_WIDTH / 2, 0, COVER_DEPTH / 2 + 0.008]} />
-        <CoverArtwork texture={insideTexture} position={[NOTEBOOK_WIDTH / 2, 0, -COVER_DEPTH / 2 - 0.008]} rotation={[0, Math.PI, 0]} />
+        <CoverArtwork texture={coverTexture} position={[NOTEBOOK_WIDTH / 2, COVER_DEPTH / 2 + 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} />
+        <CoverArtwork texture={insideTexture} position={[NOTEBOOK_WIDTH / 2, -COVER_DEPTH / 2 - 0.008, 0]} rotation={[Math.PI / 2, 0, 0]} />
       </group>
     </group>
-    <mesh position={[0, -NOTEBOOK_HEIGHT / 2 - 0.08, -0.1]} rotation={[-Math.PI / 2, 0, 0]} scale={[2.1, 0.65, 1]}>
-      <planeGeometry args={[2.9, 1.8]} />
+    <mesh position={[0, -0.28, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.8, 0.72, 1]}>
+      <planeGeometry args={[5.2, 3.9]} />
       <meshBasicMaterial color="#603847" transparent opacity={0.12} depthWrite={false} />
     </mesh>
   </AnimationContext.Provider>;
 };
 
-export const PhysicalNotebook3D = ({ state }: { state: NotebookState }) => <Canvas className="pp-book-canvas" dpr={[1, 1.5]} frameloop={state === 'closed' ? 'demand' : 'always'} camera={{ position: [HINGE_X, 0.12, 12], fov: 28 }} onCreated={({ camera }) => camera.lookAt(HINGE_X, 0, 0)} gl={{ antialias: true, alpha: true }} aria-hidden="true">
+export const PhysicalNotebook3D = ({ state }: { state: NotebookState }) => <Canvas className="pp-book-canvas" dpr={[1, 1.5]} frameloop={state === 'closed' ? 'demand' : 'always'} camera={{ position: [5.5, 6.5, 7.2], fov: 30 }} onCreated={({ camera }) => camera.lookAt(0.35, 0, 0)} gl={{ antialias: true, alpha: true }} aria-hidden="true">
   <ambientLight intensity={1.45} />
   <directionalLight position={[-3, 5, 6]} intensity={2.2} color="#fff6ee" />
   <directionalLight position={[4, 1, 2]} intensity={0.9} color="#f9a4b1" />

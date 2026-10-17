@@ -2,7 +2,7 @@ import { Component, lazy, Suspense, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import './PhysicalNotebook.css';
 
-export type NotebookState = 'closed' | 'opening' | 'flipping' | 'holding' | 'closing';
+export type NotebookState = 'closed' | 'opening' | 'open' | 'flipping' | 'closing';
 
 export type PhysicalNotebookProps = {
   state: NotebookState;

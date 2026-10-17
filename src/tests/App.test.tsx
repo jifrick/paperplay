@@ -94,15 +94,15 @@ describe('PAPERPLAY user flow', () => {
       const { container } = render(<App />);
       const notebook = () => container.querySelector('[data-notebook-state]');
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
-      act(() => { vi.advanceTimersByTime(260); });
+      act(() => { vi.advanceTimersByTime(250); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'opening');
-      act(() => { vi.advanceTimersByTime(1020); });
+      act(() => { vi.advanceTimersByTime(1200); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'open');
+      act(() => { vi.advanceTimersByTime(600); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'flipping');
-      act(() => { vi.advanceTimersByTime(1940); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'holding');
-      act(() => { vi.advanceTimersByTime(550); });
+      act(() => { vi.advanceTimersByTime(1200); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closing');
-      act(() => { vi.advanceTimersByTime(2130); });
+      act(() => { vi.advanceTimersByTime(1800); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
     } finally {
       vi.useRealTimers();
