@@ -236,8 +236,6 @@ h1 em, h2 em { color: var(--coral); font-family: 'Caveat', cursive; font-weight:
 .notebook-native-input::selection { color: transparent; background: rgba(242,85,117,.2); }
 .notebook-native-input:focus-visible { outline: 3px solid rgba(242,85,117,.42); outline-offset: -3px; }
 .notebook-cursor { position: absolute; z-index: 6; display: block; pointer-events: none; transform: translate(-6px, -50%) rotate(-16deg); transform-origin: left center; }
-.notebook-pencil-cursor { color: #6f6664; filter: drop-shadow(1px 2px 1px rgba(43,32,48,.14)); }
-.notebook-pencil-cursor::after { content: ''; position: absolute; top: 50%; left: 1px; width: 4px; height: 4px; border-radius: 50%; background: #2b2030; transform: translate(-1px, -50%); }
 .notebook-eraser-cursor { color: #d9798e; filter: drop-shadow(1px 2px 1px rgba(43,32,48,.12)); animation: erase-sweep .16s ease-in-out infinite alternate; }
 .notebook-field-footer { min-height: 19px; padding: 4px 9px 0; color: var(--ink-soft); font-size: 9px; }
 .notebook-edit-tip { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); font-family: 'Caveat', cursive; font-size: 17px; }

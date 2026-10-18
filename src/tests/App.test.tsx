@@ -164,7 +164,7 @@ describe('PAPERPLAY user flow', () => {
     expect(ink[1]).toHaveTextContent('Aman');
   });
 
-  it('connects insertion and deletion events to the notebook pencil and eraser layers', () => {
+  it('connects insertion and deletion events to the writing and eraser layers', () => {
     openFlames();
     const first = screen.getByRole('textbox', { name: /First name/i }) as HTMLTextAreaElement;
 

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
-import { Eraser, Pencil } from 'lucide-react';
+import { Eraser } from 'lucide-react';
 import { segmentGraphemes } from '../lib/normalizeName';
 
 type Point = { left: number; top: number };
@@ -19,7 +19,7 @@ type EraseAnimation = {
 };
 
 // Deliberate writing paths (rather than font outlines) for the letters most
-// commonly used in names. The pencil and graphite share this exact geometry.
+// commonly used in names.
 // Unsupported glyphs use the normal progressive reveal instead of pretending
 // that a font outline contains handwriting stroke order.
 const GLYPH_PATHS: Record<string, string> = {
@@ -93,16 +93,6 @@ const findInsertedIndexes = (before: string, after: string): number[] => {
     .filter((range) => range.start < insertedEnd && range.end > prefix)
     .map((range) => range.index);
 };
-
-const PencilCursor = ({ point }: { point: Point }) => (
-  <span
-    className="notebook-cursor notebook-pencil-cursor"
-    style={{ left: point.left, top: point.top }}
-    aria-hidden="true"
-  >
-    <Pencil size={30} strokeWidth={1.8} />
-  </span>
-);
 
 const EraserCursor = ({ point }: { point: Point }) => (
   <span
@@ -219,20 +209,7 @@ export const NotebookNameField = ({
     const update = (now: number) => {
       const progress = Math.min(1, (now - startedAt) / duration);
       setWriteProgress(progress);
-      if (animation.kind === 'write') {
-        const current = animation.indexes[Math.min(animation.indexes.length - 1, Math.floor(progress * animation.indexes.length))];
-        const element = characterRefs.current.get(current);
-        const path = element?.querySelector<SVGPathElement>('.notebook-glyph-path');
-        let point = element ? getPointForElement(element) : null;
-        if (path) {
-          const length = path.getTotalLength();
-          const at = path.getPointAtLength(length * ((progress * animation.indexes.length) % 1));
-          const rect = path.getBoundingClientRect();
-          const surface = surfaceRef.current?.getBoundingClientRect();
-          if (surface) point = { left: rect.left - surface.left + at.x * rect.width / 24, top: rect.top - surface.top + at.y * rect.height / 42 };
-        }
-        if (point) setCursorPoint(point);
-      } else if (positions.length > 0) {
+      if (animation.kind === 'erase' && positions.length > 0) {
         setCursorPoint(positions[Math.min(positions.length - 1, Math.floor(progress * positions.length))]);
       }
 
@@ -248,12 +225,10 @@ export const NotebookNameField = ({
   }, [animation, reducedMotion, value]);
 
   useLayoutEffect(() => {
-    if (!animation || animation.kind !== 'write' || reducedMotion) return;
-    const firstIndex = animation.indexes[0];
-    const element = characterRefs.current.get(firstIndex);
-    const point = element ? getPointForElement(element) : null;
+    if (!animation || animation.kind !== 'erase' || reducedMotion) return;
+    const point = animation.positions[0];
     if (point) setCursorPoint(point);
-  }, [animation, reducedMotion, value]);
+  }, [animation, reducedMotion]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     const isComposing = event.nativeEvent.isComposing;
@@ -321,7 +296,6 @@ export const NotebookNameField = ({
           onKeyDown={handleKeyDown}
           onBeforeInput={handleBeforeInput}
         />
-        {cursorPoint && animation?.kind === 'write' && <PencilCursor point={cursorPoint} />}
         {cursorPoint && animation?.kind === 'erase' && <EraserCursor point={cursorPoint} />}
       </div>
       <div className="notebook-field-footer">
