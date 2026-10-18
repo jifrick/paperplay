@@ -146,7 +146,8 @@ h1 em, h2 em { color: var(--coral); font-family: 'Caveat', cursive; font-weight:
 .mobile-dock-shelf { display: none; }
 .mobile-nav-item { position: relative; z-index: 2; display: grid; justify-items: center; align-content: center; gap: 5px; min-width: 0; min-height: 54px; padding: 2px 2px 0; border: 0; color: var(--ink); background: transparent; font-family: inherit; font-size: inherit; cursor: pointer; transition: color .18s cubic-bezier(.2, .8, .2, 1); }
 .mobile-nav-item:hover, .mobile-nav-item:focus-visible, .mobile-nav-item.active { color: var(--coral); }
-.mobile-nav-item:not(.play-item).active::after { content: ''; position: absolute; right: 50%; bottom: -5px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); transform: translateX(50%); }
+.mobile-nav-item:not(.play-item)::after { content: ''; position: absolute; right: 50%; bottom: -5px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); opacity: 0; transform: translateX(50%) scale(.45); transition: opacity .24s cubic-bezier(.2, .8, .2, 1), transform .32s cubic-bezier(.2, .8, .2, 1); }
+.mobile-nav-item:not(.play-item).active::after { opacity: 1; transform: translateX(50%) scale(1); }
 .mobile-nav-icon { display: grid; place-items: center; width: 30px; height: 28px; }
 .mobile-nav-icon svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; }
 .mobile-nav-label { max-width: 100%; overflow: hidden; font-size: 10.5px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
@@ -167,15 +168,32 @@ h1 em, h2 em { color: var(--coral); font-family: 'Caveat', cursive; font-weight:
 .mobile-nav-item.play-item:active .mobile-nav-icon { animation: mobile-nav-play-button 180ms cubic-bezier(.2, .8, .2, 1) both; }
 .mobile-nav-item.play-item:active .mobile-nav-icon svg, .mobile-nav-item.play-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-play-page; }
 
+/* Route changes get one recognisable arrival motion. The pulse class is added
+   only when the selected destination changes, so active icons stay calm. */
+.mobile-nav-item.selection-pulse .mobile-nav-icon svg { animation-duration: 320ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); animation-fill-mode: both; }
+.mobile-nav-item.home-item.selection-pulse .mobile-nav-icon svg { animation-name: mobile-nav-home-select; }
+.mobile-nav-item.how-item.selection-pulse .mobile-nav-icon svg { animation-name: mobile-nav-how-select; }
+.mobile-nav-item.about-item.selection-pulse .mobile-nav-icon svg { animation-name: mobile-nav-about-select; }
+.mobile-nav-item.more-item.selection-pulse .mobile-nav-icon svg { animation-name: mobile-nav-more-select; }
+.mobile-nav-item.play-item.selection-pulse .mobile-nav-icon { animation: mobile-nav-play-select 320ms cubic-bezier(.2, .8, .2, 1) both; }
+.mobile-nav-item.play-item.selection-pulse .mobile-nav-icon svg { animation-name: mobile-nav-play-page-select; }
+
 @keyframes mobile-nav-home-tap { 0%, 100% { transform: translateY(0); } 42% { transform: translateY(-3px) scale(1.02); } }
 @keyframes mobile-nav-how-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-1px) rotate(-3deg); } }
 @keyframes mobile-nav-play-page { 0%, 100% { transform: rotate(0) scale(1); } 42% { transform: translateY(1px) rotate(-2deg) scale(.97); } }
 @keyframes mobile-nav-play-button { 0%, 100% { transform: translateY(0) scale(1); } 42% { transform: translateY(2px) scale(.975); } 72% { transform: translateY(-1px) scale(1.01); } }
 @keyframes mobile-nav-about-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-2px) rotate(3deg); } }
 @keyframes mobile-nav-more-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-1px) rotate(6deg); } }
+@keyframes mobile-nav-home-select { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-4px) scale(1.1); } 68% { transform: translateY(1px) scale(1.03); } 100% { transform: translateY(0) scale(1); } }
+@keyframes mobile-nav-how-select { 0% { transform: rotate(0) scale(1); } 35% { transform: translateY(-2px) rotate(-7deg) scale(1.06); } 68% { transform: translateY(1px) rotate(2deg) scale(1.02); } 100% { transform: rotate(0) scale(1); } }
+@keyframes mobile-nav-play-page-select { 0% { transform: rotate(0) scale(1); } 38% { transform: translateY(1px) rotate(-4deg) scale(.96); } 72% { transform: translateY(-1px) rotate(2deg) scale(1.04); } 100% { transform: rotate(0) scale(1); } }
+@keyframes mobile-nav-play-select { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-4px) scale(1.06); } 68% { transform: translateY(0) scale(1.015); } 100% { transform: translateY(-2px) scale(1); } }
+@keyframes mobile-nav-about-select { 0% { transform: rotate(0) scale(1); } 35% { transform: translateY(-4px) rotate(6deg) scale(1.08); } 68% { transform: translateY(1px) rotate(-2deg) scale(1.02); } 100% { transform: rotate(0) scale(1); } }
+@keyframes mobile-nav-more-select { 0% { transform: rotate(0) scale(1); } 35% { transform: translateY(-2px) rotate(10deg) scale(1.08); } 68% { transform: translateY(1px) rotate(-3deg) scale(1.02); } 100% { transform: rotate(0) scale(1); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-nav-item:active .mobile-nav-icon, .mobile-nav-item:active .mobile-nav-icon svg, .mobile-nav-item:focus-visible .mobile-nav-icon svg { animation: none !important; }
+  .mobile-nav-item:active .mobile-nav-icon, .mobile-nav-item:active .mobile-nav-icon svg, .mobile-nav-item:focus-visible .mobile-nav-icon svg, .mobile-nav-item.selection-pulse .mobile-nav-icon, .mobile-nav-item.selection-pulse .mobile-nav-icon svg { animation: none !important; }
+  .mobile-nav-item:not(.play-item)::after { transition: none; }
 }
 
 .mobile-more-sheet { position: absolute; right: 14px; bottom: 96px; z-index: 4; width: min(205px, calc(100vw - 42px)); padding: 11px; border: 1px solid rgba(128, 83, 81, .18); border-radius: 17px 17px 6px 17px; background: linear-gradient(145deg, #fffaf3, #f5e8db); box-shadow: 0 22px 45px rgba(82, 50, 55, .17), 0 4px 10px rgba(82, 50, 55, .08); animation: mobile-paper-pop .22s ease-out both; }

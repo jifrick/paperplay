@@ -25,7 +25,9 @@ const isPlayPath = (pathname: string) => pathname === '/games/flames' || pathnam
 
 export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) => {
   const [moreOpen, setMoreOpen] = useState(false);
+  const [selectionPulse, setSelectionPulse] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const previousSelection = useRef<string | null>(null);
 
   useEffect(() => {
     setMoreOpen(false);
@@ -54,6 +56,16 @@ export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) 
 
   const activeFor = (href: string) => href === '/games/flames' ? isPlayPath(pathname) : pathname === href;
   const moreActive = pathname === '/privacy' || pathname === '/contact';
+  const selectedItem = pathname === '/' ? 'home-item' : pathname === '/how-it-works' ? 'how-item' : isPlayPath(pathname) ? 'play-item' : pathname === '/about' ? 'about-item' : moreActive ? 'more-item' : null;
+
+  useEffect(() => {
+    const previous = previousSelection.current;
+    previousSelection.current = selectedItem;
+    if (!selectedItem || previous === null || previous === selectedItem) return;
+    setSelectionPulse(selectedItem);
+    const timer = window.setTimeout(() => setSelectionPulse(null), 380);
+    return () => window.clearTimeout(timer);
+  }, [selectedItem]);
 
   return (
     <nav ref={navRef} className="mobile-bottom-nav" aria-label="PAPERPLAY mobile navigation">
@@ -77,7 +89,7 @@ export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) 
             <a
               key={href}
               href={href}
-              className={`mobile-nav-item ${item.itemClass}${active ? ' active' : ''}`}
+              className={`mobile-nav-item ${item.itemClass}${active ? ' active' : ''}${selectionPulse === item.itemClass ? ' selection-pulse' : ''}`}
               aria-current={active ? 'page' : undefined}
               onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(href); }}
             >
@@ -88,7 +100,7 @@ export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) 
         })}
         <button
           type="button"
-          className={`mobile-nav-item more-item${moreActive || moreOpen ? ' active' : ''}`}
+          className={`mobile-nav-item more-item${moreActive || moreOpen ? ' active' : ''}${selectionPulse === 'more-item' ? ' selection-pulse' : ''}`}
           aria-label="More"
           aria-expanded={moreOpen}
           aria-controls="paperplay-more-menu"
