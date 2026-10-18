@@ -15,10 +15,10 @@ type MobileBottomNavProps = {
 };
 
 const mobileItems = [
-  { label: 'Home', href: '/', Icon: NotebookHomeIcon },
-  { label: 'How It Works', href: '/how-it-works', Icon: InstructionSheetIcon },
-  { label: 'Play', href: '/games/flames', Icon: PlayNotebookIcon, play: true },
-  { label: 'About', href: '/about', Icon: PaperTabIcon },
+  { label: 'Home', href: '/', Icon: NotebookHomeIcon, itemClass: 'home-item' },
+  { label: 'How It Works', href: '/how-it-works', Icon: InstructionSheetIcon, itemClass: 'how-item' },
+  { label: 'Play', href: '/games/flames', Icon: PlayNotebookIcon, itemClass: 'play-item' },
+  { label: 'About', href: '/about', Icon: PaperTabIcon, itemClass: 'about-item' },
 ] as const;
 
 const isPlayPath = (pathname: string) => pathname === '/games/flames' || pathname.startsWith('/games/');
@@ -72,13 +72,12 @@ export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) 
         <span className="mobile-dock-shelf" aria-hidden="true" />
         {mobileItems.map((item) => {
           const { label, href, Icon } = item;
-          const play = 'play' in item && item.play;
           const active = activeFor(href);
           return (
             <a
               key={href}
               href={href}
-              className={`mobile-nav-item${play ? ' play-item' : ''}${active ? ' active' : ''}`}
+              className={`mobile-nav-item ${item.itemClass}${active ? ' active' : ''}`}
               aria-current={active ? 'page' : undefined}
               onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(href); }}
             >

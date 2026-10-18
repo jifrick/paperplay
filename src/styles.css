@@ -144,11 +144,11 @@ h1 em, h2 em { color: var(--coral); font-family: 'Caveat', cursive; font-weight:
 .mobile-dock::before { content: ''; position: absolute; top: -15px; left: calc(50% - 61px); z-index: 0; width: 122px; height: 55px; border: 1px solid rgba(128, 83, 81, .17); border-bottom: 0; border-radius: 62px 62px 22px 22px; background: linear-gradient(180deg, #fffaf2 0%, #f6eadd 100%); box-shadow: 0 -5px 11px rgba(82, 50, 55, .035); pointer-events: none; }
 .mobile-dock::after { content: ''; position: absolute; right: 17px; bottom: 6px; left: 17px; height: 1px; border-radius: 50%; background: rgba(174, 113, 115, .22); }
 .mobile-dock-shelf { display: none; }
-.mobile-nav-item { position: relative; z-index: 2; display: grid; justify-items: center; align-content: center; gap: 5px; min-width: 0; min-height: 54px; padding: 2px 2px 0; border: 0; color: var(--ink); background: transparent; font-family: inherit; font-size: inherit; cursor: pointer; transition: color .2s ease, transform .2s ease; }
+.mobile-nav-item { position: relative; z-index: 2; display: grid; justify-items: center; align-content: center; gap: 5px; min-width: 0; min-height: 54px; padding: 2px 2px 0; border: 0; color: var(--ink); background: transparent; font-family: inherit; font-size: inherit; cursor: pointer; transition: color .18s cubic-bezier(.2, .8, .2, 1); }
 .mobile-nav-item:hover, .mobile-nav-item:focus-visible, .mobile-nav-item.active { color: var(--coral); }
 .mobile-nav-item:not(.play-item).active::after { content: ''; position: absolute; right: 50%; bottom: -5px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); transform: translateX(50%); }
 .mobile-nav-icon { display: grid; place-items: center; width: 30px; height: 28px; }
-.mobile-nav-icon svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+.mobile-nav-icon svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; }
 .mobile-nav-label { max-width: 100%; overflow: hidden; font-size: 10.5px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
 /* Reserve the exact middle track. The taller artwork grows upwards out of its
    icon row, so neither its size nor label widths can move the dock's columns. */
@@ -157,6 +157,27 @@ h1 em, h2 em { color: var(--coral); font-family: 'Caveat', cursive; font-weight:
 .mobile-nav-item.play-item .mobile-nav-icon svg { width: clamp(32px, 9vw, 37px); height: auto; aspect-ratio: 1; stroke-width: 1.5; }
 .mobile-nav-item.play-item:hover .mobile-nav-icon, .mobile-nav-item.play-item:focus-visible .mobile-nav-icon, .mobile-nav-item.play-item.active .mobile-nav-icon { box-shadow: 0 10px 17px rgba(217, 61, 99, .27), 0 3px 5px rgba(82, 50, 55, .1), inset 0 1px 1px rgba(255, 255, 255, .42); transform: translateY(-2px); }
 .mobile-nav-item.play-item .mobile-nav-label { color: #d93d63; font-size: 10.5px; }
+
+/* Tap feedback stays on the artwork, so the five-column layout never shifts. */
+.mobile-nav-item:active .mobile-nav-icon svg, .mobile-nav-item:focus-visible .mobile-nav-icon svg { animation-duration: 180ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); animation-fill-mode: both; }
+.mobile-nav-item.home-item:active .mobile-nav-icon svg, .mobile-nav-item.home-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-home-tap; }
+.mobile-nav-item.how-item:active .mobile-nav-icon svg, .mobile-nav-item.how-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-how-tap; }
+.mobile-nav-item.about-item:active .mobile-nav-icon svg, .mobile-nav-item.about-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-about-tap; }
+.mobile-nav-item.more-item:active .mobile-nav-icon svg, .mobile-nav-item.more-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-more-tap; }
+.mobile-nav-item.play-item:active .mobile-nav-icon { animation: mobile-nav-play-button 180ms cubic-bezier(.2, .8, .2, 1) both; }
+.mobile-nav-item.play-item:active .mobile-nav-icon svg, .mobile-nav-item.play-item:focus-visible .mobile-nav-icon svg { animation-name: mobile-nav-play-page; }
+
+@keyframes mobile-nav-home-tap { 0%, 100% { transform: translateY(0); } 42% { transform: translateY(-3px) scale(1.02); } }
+@keyframes mobile-nav-how-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-1px) rotate(-3deg); } }
+@keyframes mobile-nav-play-page { 0%, 100% { transform: rotate(0) scale(1); } 42% { transform: translateY(1px) rotate(-2deg) scale(.97); } }
+@keyframes mobile-nav-play-button { 0%, 100% { transform: translateY(0) scale(1); } 42% { transform: translateY(2px) scale(.975); } 72% { transform: translateY(-1px) scale(1.01); } }
+@keyframes mobile-nav-about-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-2px) rotate(3deg); } }
+@keyframes mobile-nav-more-tap { 0%, 100% { transform: rotate(0); } 42% { transform: translateY(-1px) rotate(6deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-item:active .mobile-nav-icon, .mobile-nav-item:active .mobile-nav-icon svg, .mobile-nav-item:focus-visible .mobile-nav-icon svg { animation: none !important; }
+}
+
 .mobile-more-sheet { position: absolute; right: 14px; bottom: 96px; z-index: 4; width: min(205px, calc(100vw - 42px)); padding: 11px; border: 1px solid rgba(128, 83, 81, .18); border-radius: 17px 17px 6px 17px; background: linear-gradient(145deg, #fffaf3, #f5e8db); box-shadow: 0 22px 45px rgba(82, 50, 55, .17), 0 4px 10px rgba(82, 50, 55, .08); animation: mobile-paper-pop .22s ease-out both; }
 .mobile-more-sheet::after { content: ''; position: absolute; right: 22px; bottom: -7px; width: 14px; height: 14px; border-right: 1px solid rgba(128, 83, 81, .18); border-bottom: 1px solid rgba(128, 83, 81, .18); background: #f5e8db; transform: rotate(45deg); }
 .mobile-more-title { margin: 2px 5px 8px; color: var(--ink); font-family: 'Caveat', cursive; font-size: 21px; font-weight: 600; }
