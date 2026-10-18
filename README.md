@@ -34,6 +34,8 @@ Examples:
 
 Before launch, replace the `paperplay.example` placeholder in `public/robots.txt` and `public/sitemap.xml` with the real public origin. The runtime canonical URL uses the current origin, so it remains correct on a deployed host.
 
+The repository includes `vercel.json` with the Vite build command, `dist` output directory, and SPA rewrite. Advertising remains disabled; no AdSense script, publisher ID, or `ads.txt` entry is included.
+
 ## Product/privacy notes
 
 - Calculations are local and deterministic; no AI, backend, account, database, analytics, or name storage is required.
