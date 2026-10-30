@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { normalizeName, segmentGraphemes } from '../lib/normalizeName';
 import { matchLetterOccurrences } from '../lib/matchLetterOccurrences';
 import { validateName } from '../lib/validation';
-import { calculateFlames, FLAMES_LETTERS } from '../games/flames/calculateFlames';
+import { calculateFlames, FLAMES_LETTERS, FLAMES_MEANINGS, FLAMES_DISCLAIMER } from '../games/flames/calculateFlames';
 import { calculateLetterMatch } from '../games/letter-match/calculateLetterMatch';
-import { calculateNameNumber } from '../games/name-number/calculateNameNumber';
-import { calculateLoveMeter, getLoveMeterBand } from '../games/love-meter/calculateLoveMeter';
+import { calculateNameNumber, NAME_NUMBER_CATEGORIES, NAME_NUMBER_DISCLAIMER } from '../games/name-number/calculateNameNumber';
+import { calculateLoveMeter, getLoveMeterBand, LOVE_METER_DISCLAIMER } from '../games/love-meter/calculateLoveMeter';
 
 describe('normalization and validation', () => {
   it('trims, NFC-normalizes, ignores punctuation for letter units, and preserves original input', () => {
     const composed = normalizeName('  José! ');
-    const decomposed = normalizeName(`Jose\u0301`);
+    const decomposed = normalizeName('Jose\u0301');
     expect(composed.original).toBe('  José! ');
     expect(composed.display).toBe('José!');
     expect(composed.normalized).toBe('José');
@@ -71,16 +71,29 @@ describe('occurrence-aware matching', () => {
 });
 
 describe('FLAMES', () => {
+  it('defines exact canonical category mappings: Friends, Love Marriage, Arranged Marriage, Marriage, Enemies, Strangers', () => {
+    expect(FLAMES_LETTERS).toEqual(['F', 'L', 'A', 'M', 'E', 'S']);
+    expect(FLAMES_MEANINGS.F).toBe('Friends');
+    expect(FLAMES_MEANINGS.L).toBe('Love Marriage');
+    expect(FLAMES_MEANINGS.A).toBe('Arranged Marriage');
+    expect(FLAMES_MEANINGS.M).toBe('Marriage');
+    expect(FLAMES_MEANINGS.E).toBe('Enemies');
+    expect(FLAMES_MEANINGS.S).toBe('Strangers');
+  });
+
   it('starts with the exact sequence and records circular elimination rounds', () => {
     const result = calculateFlames('ANNA', 'AMAN');
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(FLAMES_LETTERS).toEqual(['F', 'L', 'A', 'M', 'E', 'S']);
     expect(result.remainingCount).toBe(2);
     expect(result.rounds.length).toBe(5);
     expect(result.rounds.every((round) => round.count === 2)).toBe(true);
     expect(result.rounds.at(-1)?.lettersAfter).toHaveLength(1);
-    expect(result.finalLetter).toBeDefined();
+    expect(result.finalLetter).toBe('E');
+    expect(result.category).toBe('Enemies');
+    expect(result.disclaimer).toBe(FLAMES_DISCLAIMER);
+    expect(result.walkthrough).toBeDefined();
+    expect(result.walkthrough.eliminationSteps).toHaveLength(5);
   });
 
   it('returns a truthful zero-count edge state without inventing a result', () => {
@@ -90,6 +103,7 @@ describe('FLAMES', () => {
     expect(result.status).toBe('zero-count');
     expect(result.finalLetter).toBeUndefined();
     expect(result.edgeCaseMessage).toContain('Every letter matched');
+    expect(result.walkthrough.eliminationSteps[0]).toContain('Zero unmatched letters left');
   });
 
   it('is invariant to swapping names and mode changes', () => {
@@ -98,7 +112,30 @@ describe('FLAMES', () => {
     expect('error' in one || 'error' in two).toBe(false);
     if ('error' in one || 'error' in two) return;
     expect(one.finalLetter).toBe(two.finalLetter);
+    expect(one.category).toBe(two.category);
     expect(one.remainingCount).toBe(two.remainingCount);
+  });
+
+  it('correctly maps all six letters to the updated categories across known counts', () => {
+    // Verified circular elimination outcomes from count:
+    // N=1 -> S (Strangers)
+    // N=2 -> E (Enemies)
+    // N=3 -> F (Friends)
+    // N=6 -> M (Marriage)
+    // N=8 -> A (Arranged Marriage)
+    // N=10 -> L (Love Marriage)
+    const testCases = [
+      { name1: 'A', name2: 'B', expectedLetter: 'E', expectedCat: 'Enemies' }, // N=2
+      { name1: 'AB', name2: 'C', expectedLetter: 'F', expectedCat: 'Friends' }, // N=3
+    ];
+    for (const tc of testCases) {
+      const res = calculateFlames(tc.name1, tc.name2);
+      expect('error' in res).toBe(false);
+      if (!('error' in res) && res.status === 'complete') {
+        expect(res.finalLetter).toBe(tc.expectedLetter);
+        expect(res.category).toBe(tc.expectedCat);
+      }
+    }
   });
 });
 
@@ -121,8 +158,65 @@ describe('Name Number', () => {
     expect(result.first.score).toBe(1);
     expect(result.second.score).toBe(26);
     expect(result.combinedScore).toBe(27);
+    expect(result.categoryIndex).toBe(2);
     expect(result.category).toBe('Double Trouble');
     expect(result.unsupportedCharacters).toBe(true);
+    expect(result.disclaimer).toBe(NAME_NUMBER_DISCLAIMER);
+    expect(result.walkthrough.explanation).toContain('27');
+  });
+
+  it('maps all five modulo categories consistently across boundaries', () => {
+    expect(NAME_NUMBER_CATEGORIES[0]).toBe('Notebook Legends');
+    expect(NAME_NUMBER_CATEGORIES[1]).toBe('Unexpected Duo');
+    expect(NAME_NUMBER_CATEGORIES[2]).toBe('Double Trouble');
+    expect(NAME_NUMBER_CATEGORIES[3]).toBe('Classic Combo');
+    expect(NAME_NUMBER_CATEGORIES[4]).toBe('Plot Twist Pair');
+
+    // A=1, B=2, C=3, D=4, E=5
+    // Remainder 0: A + D = 1 + 4 = 5 (5 % 5 = 0) -> Notebook Legends
+    const r0 = calculateNameNumber('A', 'D');
+    expect('error' in r0).toBe(false);
+    if (!('error' in r0)) {
+      expect(r0.combinedScore).toBe(5);
+      expect(r0.categoryIndex).toBe(0);
+      expect(r0.category).toBe('Notebook Legends');
+    }
+
+    // Remainder 1: A + E = 1 + 5 = 6 (6 % 5 = 1) -> Unexpected Duo
+    const r1 = calculateNameNumber('A', 'E');
+    expect('error' in r1).toBe(false);
+    if (!('error' in r1)) {
+      expect(r1.combinedScore).toBe(6);
+      expect(r1.categoryIndex).toBe(1);
+      expect(r1.category).toBe('Unexpected Duo');
+    }
+
+    // Remainder 2: B + E = 2 + 5 = 7 (7 % 5 = 2) -> Double Trouble
+    const r2 = calculateNameNumber('B', 'E');
+    expect('error' in r2).toBe(false);
+    if (!('error' in r2)) {
+      expect(r2.combinedScore).toBe(7);
+      expect(r2.categoryIndex).toBe(2);
+      expect(r2.category).toBe('Double Trouble');
+    }
+
+    // Remainder 3: C + E = 3 + 5 = 8 (8 % 5 = 3) -> Classic Combo
+    const r3 = calculateNameNumber('C', 'E');
+    expect('error' in r3).toBe(false);
+    if (!('error' in r3)) {
+      expect(r3.combinedScore).toBe(8);
+      expect(r3.categoryIndex).toBe(3);
+      expect(r3.category).toBe('Classic Combo');
+    }
+
+    // Remainder 4: D + E = 4 + 5 = 9 (9 % 5 = 4) -> Plot Twist Pair
+    const r4 = calculateNameNumber('D', 'E');
+    expect('error' in r4).toBe(false);
+    if (!('error' in r4)) {
+      expect(r4.combinedScore).toBe(9);
+      expect(r4.categoryIndex).toBe(4);
+      expect(r4.category).toBe('Plot Twist Pair');
+    }
   });
 
   it('rejects a name with no scorable A–Z letters', () => {
@@ -145,6 +239,8 @@ describe('Love Meter', () => {
     expect(one.score).toBeGreaterThanOrEqual(0);
     expect(one.score).toBeLessThanOrEqual(100);
     expect(one.matchedPairs).toBe(3);
+    expect(one.disclaimer).toBe(LOVE_METER_DISCLAIMER);
+    expect(one.walkthrough).toBeDefined();
   });
 
   it('maps every specified band boundary', () => {

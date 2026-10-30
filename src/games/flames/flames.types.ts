@@ -1,6 +1,12 @@
 export type FlamesLetter = 'F' | 'L' | 'A' | 'M' | 'E' | 'S';
 export type FlamesMode = 'crush' | 'friendship' | 'fictional';
-export type FlamesCategory = 'Friends' | 'Lovers' | 'Affection' | 'Marriage' | 'Enemies' | 'Siblings';
+export type FlamesCategory =
+  | 'Friends'
+  | 'Love Marriage'
+  | 'Arranged Marriage'
+  | 'Marriage'
+  | 'Enemies'
+  | 'Strangers';
 
 export type FlamesRound = {
   lettersBefore: FlamesLetter[];
@@ -8,8 +14,23 @@ export type FlamesRound = {
   count: number;
   removalIndex: number;
   removed: FlamesLetter;
+  removedMeaning: FlamesCategory;
   lettersAfter: FlamesLetter[];
   nextStartingIndex: number;
+  explanation: string;
+};
+
+export type FlamesWalkthrough = {
+  normalizedFirst: string;
+  normalizedSecond: string;
+  matchedPairs: Array<{ character: string; firstIndex: number; secondIndex: number }>;
+  unmatchedFirst: string[];
+  unmatchedSecond: string[];
+  remainingCount: number;
+  eliminationSteps: string[];
+  finalLetter?: FlamesLetter;
+  finalCategory?: FlamesCategory;
+  entertainmentDisclaimer: string;
 };
 
 export type FlamesResult = {
@@ -25,4 +46,6 @@ export type FlamesResult = {
   mode: FlamesMode;
   algorithmVersion: 'paperplay-flames-1';
   edgeCaseMessage?: string;
+  walkthrough: FlamesWalkthrough;
+  disclaimer: string;
 };
