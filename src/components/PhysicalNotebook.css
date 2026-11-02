@@ -9,6 +9,17 @@
   place-items: center;
   overflow: hidden;
   isolation: isolate;
+  transition: min-height 0.4s ease, height 0.4s ease;
+}
+
+.pp-book-scene.is-expanded-open {
+  height: auto !important;
+  min-height: 520px !important;
+  overflow: visible !important;
+}
+
+.pp-book-scene.is-webgl {
+  overflow: visible;
 }
 
 .pp-book-canvas {
