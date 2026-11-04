@@ -1,20 +1,15 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
-  Flame,
-  Gauge,
-  Hash,
-  Heart,
   Pencil,
   Sparkles,
   X,
 } from 'lucide-react';
 import './InteractiveNotebook.css';
+import type { NotebookState } from './PhysicalNotebook';
 
 export type NotebookPageId = 'flames' | 'name-number' | 'love-meter';
 
@@ -94,7 +89,10 @@ export interface InteractiveNotebookProps {
   onOpenChange: (open: boolean) => void;
   currentPageIndex?: number;
   onPageChange?: (index: number) => void;
+  state?: NotebookState;
 }
+
+export type VisualPhase = 'closed' | 'opening' | 'open' | 'settling' | 'closing';
 
 export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   onNavigate,
@@ -102,20 +100,77 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   onOpenChange,
   currentPageIndex = 0,
   onPageChange,
+  state: externalState,
 }) => {
   const [activePage, setActivePage] = useState(currentPageIndex);
+  const [visualPhase, setVisualPhase] = useState<VisualPhase>(isOpen ? 'open' : 'closed');
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
   const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  );
+
   const notebookRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const transitionTimerRef = useRef<number | null>(null);
+
+  // Reduced motion preference detection
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!media) return;
+    const update = () => setReducedMotion(media.matches);
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
 
   // Sync external page index if passed
   useEffect(() => {
     setActivePage(currentPageIndex);
   }, [currentPageIndex]);
+
+  // Synchronize visualPhase with isOpen prop changes
+  useEffect(() => {
+    if (transitionTimerRef.current) {
+      window.clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+
+    if (isOpen) {
+      if (visualPhase === 'closed') {
+        if (reducedMotion) {
+          setVisualPhase('open');
+        } else {
+          setVisualPhase('opening');
+          transitionTimerRef.current = window.setTimeout(() => {
+            setVisualPhase('settling');
+            transitionTimerRef.current = window.setTimeout(() => {
+              setVisualPhase('open');
+            }, 180);
+          }, 680);
+        }
+      }
+    } else {
+      if (visualPhase === 'open' || visualPhase === 'settling' || visualPhase === 'opening') {
+        if (reducedMotion) {
+          setVisualPhase('closed');
+        } else {
+          setVisualPhase('closing');
+          transitionTimerRef.current = window.setTimeout(() => {
+            setVisualPhase('closed');
+          }, 620);
+        }
+      }
+    }
+
+    return () => {
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, [isOpen, reducedMotion]);
 
   const updatePage = (newIndex: number) => {
     setActivePage(newIndex);
@@ -126,35 +181,39 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     if (isFlipping || activePage >= NOTEBOOK_PAGES.length - 1) return;
     setIsFlipping(true);
     setFlipDirection('next');
+    const delay = reducedMotion ? 10 : 520;
     setTimeout(() => {
       updatePage(activePage + 1);
       setFlipDirection(null);
       setIsFlipping(false);
-    }, 550);
+    }, delay);
   };
 
   const handlePrevPage = () => {
     if (isFlipping || activePage <= 0) return;
     setIsFlipping(true);
     setFlipDirection('prev');
+    const delay = reducedMotion ? 10 : 520;
     setTimeout(() => {
       updatePage(activePage - 1);
       setFlipDirection(null);
       setIsFlipping(false);
-    }, 550);
+    }, delay);
   };
 
   const handleOpen = () => {
+    if (visualPhase === 'opening' || visualPhase === 'open') return;
     onOpenChange(true);
   };
 
   const handleClose = () => {
+    if (visualPhase === 'closing' || visualPhase === 'closed') return;
     onOpenChange(false);
   };
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isOpen) return;
+    if (visualPhase !== 'open' && visualPhase !== 'settling') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') {
@@ -168,11 +227,11 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, activePage, isFlipping]);
+  }, [visualPhase, activePage, isFlipping]);
 
-  // Mouse tilt on closed notebook
+  // Mouse tilt on closed notebook for realistic parallax depth
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isOpen) return;
+    if (visualPhase !== 'closed' || reducedMotion) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -185,7 +244,9 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   };
 
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (visualPhase === 'closed') {
+      setIsHovered(true);
+    }
   };
 
   const handleMouseLeave = () => {
@@ -193,7 +254,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     setMouseTilt({ x: 0, y: 0 });
   };
 
-  // Touch swipe support for mobile
+  // Touch swipe gesture support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -203,7 +264,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchStartX - touchEndX;
 
-    if (Math.abs(diff) > 40) {
+    if (Math.abs(diff) > 42) {
       if (diff > 0) {
         handleNextPage();
       } else {
@@ -214,11 +275,22 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   };
 
   const currentPage = NOTEBOOK_PAGES[activePage];
-  const nextTargetPage = flipDirection === 'next' && activePage < NOTEBOOK_PAGES.length - 1 ? NOTEBOOK_PAGES[activePage + 1] : null;
-  const prevTargetPage = flipDirection === 'prev' && activePage > 0 ? NOTEBOOK_PAGES[activePage - 1] : null;
+  const nextTargetPage =
+    flipDirection === 'next' && activePage < NOTEBOOK_PAGES.length - 1
+      ? NOTEBOOK_PAGES[activePage + 1]
+      : null;
+  const prevTargetPage =
+    flipDirection === 'prev' && activePage > 0 ? NOTEBOOK_PAGES[activePage - 1] : null;
 
-  // Dynamic 3D transform for closed state
-  const closedTransform = !isOpen
+  const isClosed = visualPhase === 'closed';
+  const isOpening = visualPhase === 'opening';
+  const isSettling = visualPhase === 'settling';
+  const isOpenState = visualPhase === 'open';
+  const isClosing = visualPhase === 'closing';
+  const isDisplayingSpread = isOpenState || isSettling || isOpening || isClosing;
+
+  // Closed state perspective tilt
+  const closedTransform = isClosed
     ? `perspective(1200px) rotateX(${isHovered ? -mouseTilt.y * 7 : 0}deg) rotateY(${
         isHovered ? mouseTilt.x * 9 + 4 : 4
       }deg) rotateZ(-1.5deg) translateZ(${isHovered ? 12 : 0}px)`
@@ -227,7 +299,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   return (
     <div
       ref={notebookRef}
-      className={`interactive-notebook-wrapper ${isOpen ? 'is-open' : 'is-closed'} ${
+      className={`interactive-notebook-wrapper ${isClosed ? 'is-closed' : 'is-open'} phase-${visualPhase} ${
         isFlipping ? `is-flipping flip-${flipDirection}` : ''
       }`}
       aria-label="Interactive 3D notebook of childhood games"
@@ -235,163 +307,188 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={isOpen ? handleTouchStart : undefined}
-      onTouchEnd={isOpen ? handleTouchEnd : undefined}
+      onTouchStart={isDisplayingSpread ? handleTouchStart : undefined}
+      onTouchEnd={isDisplayingSpread ? handleTouchEnd : undefined}
     >
-      {/* 1. CLOSED NOTEBOOK VIEW */}
-      {!isOpen && (
-        <div
-          className="interactive-notebook-closed"
-          style={{ transform: closedTransform }}
-          onClick={handleOpen}
-          role="button"
-          tabIndex={0}
-          aria-label="Open your notebook"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleOpen();
-            }
-          }}
-        >
-          {/* Natural drop shadow under the book */}
-          <div
-            className="closed-shadow"
-            style={{
-              transform: isHovered
-                ? `translate(${mouseTilt.x * -18}px, ${mouseTilt.y * 12 + 28}px) scale(${1 + Math.abs(mouseTilt.x) * 0.05})`
-                : 'translate(0px, 24px) scale(1)',
-              opacity: isHovered ? 0.35 : 0.24,
-            }}
-          />
-
-          {/* Realistic physical back cover layer */}
-          <div className="closed-back-cover" data-notebook-part="back-cover" />
-
-          {/* Layered paper edges showing real stack thickness */}
-          <div className="closed-paper-stack" data-notebook-part="paper-block">
-            {Array.from({ length: 7 }, (_, i) => (
-              <div
-                key={i}
-                className="closed-paper-edge-sheet"
-                data-notebook-part="page"
-                style={{
-                  transform: `translate(${i * 1.5}px, ${i * 1.5}px) translateZ(${i * 0.8}px)`,
+      {/* =========================================================================
+          1. TOP NAVIGATION BAR (Visible when notebook is open or transitioning)
+         ========================================================================= */}
+      {isDisplayingSpread && (
+        <div className="notebook-top-bar" aria-label="Notebook header bar">
+          {/* Page Tabs */}
+          <div className="notebook-page-tabs" role="tablist" aria-label="Notebook pages">
+            {NOTEBOOK_PAGES.map((page, idx) => (
+              <button
+                key={page.id}
+                role="tab"
+                aria-selected={activePage === idx}
+                className={`notebook-tab-pill ${activePage === idx ? 'active' : ''}`}
+                onClick={() => {
+                  if (idx !== activePage && !isFlipping) {
+                    setFlipDirection(idx > activePage ? 'next' : 'prev');
+                    setIsFlipping(true);
+                    const delay = reducedMotion ? 10 : 500;
+                    setTimeout(() => {
+                      updatePage(idx);
+                      setFlipDirection(null);
+                      setIsFlipping(false);
+                    }, delay);
+                  }
                 }}
-              />
+              >
+                <span className="tab-num">{page.pageNumber}</span>{' '}
+                <span className="tab-name">{page.title}</span>
+              </button>
             ))}
           </div>
 
-          {/* Bound spine with metallic rings */}
-          <div className="closed-spine" data-notebook-part="spine">
-            <div className="closed-spine-crease" />
-            <div className="closed-spine-rings">
-              {Array.from({ length: 6 }, (_, i) => (
-                <div key={i} className="closed-ring">
-                  <span className="ring-highlight" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Front cover */}
-          <div className="closed-front-cover pp-book-cover-front" data-notebook-part="front-cover">
-            {/* Subtle paper / cloth grain */}
-            <div className="cover-grain-overlay" />
-            {/* Embossed cover border */}
-            <div className="cover-border-emboss" />
-
-            <div className="cover-title-group">
-              <span className="cover-script-small">my</span>
-              <strong className="cover-main-title">NOTEBOOK</strong>
-              <small className="cover-subtitle">paper games &amp; big feelings</small>
-            </div>
-
-            {/* Handwritten corner signature */}
-            <b className="cover-signature">xoxo ♡</b>
-
-            {/* Subtle specular sheen that follows mouse pointer */}
-            {isHovered && (
-              <div
-                className="cover-specular"
-                style={{
-                  background: `radial-gradient(circle at ${(mouseTilt.x + 1) * 50}% ${(mouseTilt.y + 1) * 50}%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 60%)`,
-                }}
-              />
-            )}
-          </div>
-
-          {/* Floating interaction cue badge */}
-          <div className="open-cue-pill">
-            <span className="cue-pulse-dot" />
-            <span className="cue-pencil-icon">✎</span>
-            <span className="cue-text">Open your notebook</span>
-            <ArrowRight size={14} className="cue-arrow" />
-          </div>
+          {/* Close Notebook Button */}
+          <button
+            className="notebook-close-button"
+            onClick={handleClose}
+            aria-label="Close notebook"
+            title="Close notebook (Esc)"
+          >
+            <X size={16} />
+            <span>Close notebook</span>
+          </button>
         </div>
       )}
 
-      {/* 2. OPEN NOTEBOOK SPREAD */}
-      {isOpen && (
-        <div className="interactive-notebook-open" aria-live="polite">
-          {/* Top navigation & control bar */}
-          <div className="notebook-top-bar">
-            {/* Page tabs */}
-            <div className="notebook-page-tabs" role="tablist" aria-label="Notebook pages">
-              {NOTEBOOK_PAGES.map((page, idx) => (
-                <button
-                  key={page.id}
-                  role="tab"
-                  aria-selected={activePage === idx}
-                  className={`notebook-tab-pill ${activePage === idx ? 'active' : ''}`}
-                  onClick={() => {
-                    if (idx !== activePage && !isFlipping) {
-                      setFlipDirection(idx > activePage ? 'next' : 'prev');
-                      setIsFlipping(true);
-                      setTimeout(() => {
-                        updatePage(idx);
-                        setFlipDirection(null);
-                        setIsFlipping(false);
-                      }, 500);
-                    }
+      {/* =========================================================================
+          2. THE 3D NOTEBOOK STAGE
+         ========================================================================= */}
+      <div className="notebook-3d-stage">
+        {/* Natural Drop Shadow on Desk */}
+        <div
+          className={`notebook-ground-shadow ${isClosed ? 'closed-shadow-mode' : 'spread-shadow-mode'}`}
+          style={
+            isClosed
+              ? {
+                  transform: isHovered
+                    ? `translate(${mouseTilt.x * -18}px, ${mouseTilt.y * 12 + 28}px) scale(${
+                        1 + Math.abs(mouseTilt.x) * 0.05
+                      })`
+                    : 'translate(0px, 24px) scale(1)',
+                  opacity: isHovered ? 0.35 : 0.24,
+                }
+              : undefined
+          }
+        />
+
+        {/* =======================================================================
+            A. CLOSED NOTEBOOK VIEW (Hinged, tiltable physical object)
+           ======================================================================= */}
+        {isClosed && (
+          <div
+            className="interactive-notebook-closed"
+            style={{ transform: closedTransform }}
+            onClick={handleOpen}
+            role="button"
+            tabIndex={0}
+            aria-label="Open your notebook"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpen();
+              }
+            }}
+          >
+            {/* Physical Back Cover */}
+            <div className="closed-back-cover" data-notebook-part="back-cover" />
+
+            {/* Layered Paper Edge (Real multi-sheet paper stack thickness) */}
+            <div className="closed-paper-stack" data-notebook-part="paper-block">
+              {Array.from({ length: 7 }, (_, i) => (
+                <div
+                  key={i}
+                  className="closed-paper-edge-sheet"
+                  data-notebook-part="page"
+                  style={{
+                    transform: `translate(${i * 1.5}px, ${i * 1.5}px) translateZ(${i * 0.8}px)`,
                   }}
-                >
-                  <span className="tab-num">{page.pageNumber}</span>
-                  <span className="tab-name">{page.title}</span>
-                </button>
+                />
               ))}
             </div>
 
-            {/* Close button */}
-            <button
-              className="notebook-close-button"
-              onClick={handleClose}
-              aria-label="Close notebook"
-              title="Close notebook (Esc)"
+            {/* Spine with Metallic Wire Spiral Rings */}
+            <div className="closed-spine" data-notebook-part="spine">
+              <div className="closed-spine-crease" />
+              <div className="closed-spine-rings">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} className="closed-ring">
+                    <span className="ring-highlight" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Front Cover Face */}
+            <div
+              className="closed-front-cover pp-book-cover-front"
+              data-notebook-part="front-cover"
             >
-              <X size={16} />
-              <span>Close notebook</span>
-            </button>
+              {/* Subtle paper grain texture */}
+              <div className="cover-grain-overlay" />
+              {/* Embossed dashed perimeter stitching */}
+              <div className="cover-border-emboss" />
+
+              <div className="cover-title-group">
+                <span className="cover-script-small">my</span>
+                <strong className="cover-main-title">NOTEBOOK</strong>
+                <small className="cover-subtitle">paper games &amp; big feelings</small>
+              </div>
+
+              {/* Handwritten corner signature */}
+              <b className="cover-signature">xoxo ♡</b>
+
+              {/* Specular sheen responding to mouse movement */}
+              {isHovered && !reducedMotion && (
+                <div
+                  className="cover-specular"
+                  style={{
+                    background: `radial-gradient(circle at ${(mouseTilt.x + 1) * 50}% ${
+                      (mouseTilt.y + 1) * 50
+                    }%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 60%)`,
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Floating Interaction Cue Pill */}
+            <div className="open-cue-pill">
+              <span className="cue-pulse-dot" />
+              <span className="cue-pencil-icon">✎</span>
+              <span className="cue-text">Open your notebook</span>
+              <ArrowRight size={14} className="cue-arrow" />
+            </div>
           </div>
+        )}
 
-          {/* Open notebook 3D book spread */}
-          <div className="open-book-spread">
-            {/* Dynamic drop shadow under open spread */}
-            <div className="open-spread-shadow" />
+        {/* =======================================================================
+            B. OPEN / TRANSITIONING NOTEBOOK SPREAD
+           ======================================================================= */}
+        {isDisplayingSpread && (
+          <div className="open-book-spread" aria-live="polite">
+            {/* Back cover base under open pages */}
+            <div className="open-base-cover" data-notebook-part="back-cover" />
 
-            {/* Back cover base under open sheets */}
-            <div className="open-base-cover" />
+            {/* Multi-sheet edge stack layers */}
+            <div className="open-paper-edge-stack" data-notebook-part="paper-block">
+              {Array.from({ length: 7 }, (_, i) => (
+                <div key={i} className="open-paper-edge-layer" data-notebook-part="page" />
+              ))}
+            </div>
 
-            {/* LEFT PAGE: Notebook doodles & ritual rules */}
+            {/* LEFT PAGE: Notebook Doodles, Schoolyard Rituals & Formula Notes */}
             <div className="open-page left-page">
-              {/* Paper background lines & red margin */}
               <div className="page-paper-lines" />
               <div className="page-margin-red" />
 
-              {/* Stacked paper edge thickness on the left */}
+              {/* Stacked paper edge thickness on the left (shifts as pages turn) */}
               <div
                 className="left-edge-thickness"
-                style={{ width: `${Math.max(3, (activePage + 1) * 3)}px` }}
+                style={{ width: `${Math.max(3, (activePage + 1) * 3.5)}px` }}
               />
 
               <div className="left-page-content">
@@ -400,7 +497,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   <span className="doodle-star">✦</span>
                 </div>
 
-                {/* Hand-drawn game illustration & formulas */}
+                {/* Hand-drawn Game Doodles & Formulas */}
                 <div className="left-doodle-area">
                   {currentPage.leftDoodle === 'flames' && (
                     <div className="flames-doodle-art" aria-hidden="true">
@@ -482,20 +579,22 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               )}
             </div>
 
-            {/* CENTER SPINE BINDING WITH SPIRAL COILS */}
-            <div className="open-spine-center" aria-hidden="true">
+            {/* CENTER SPINE BINDING WITH SPIRAL WIRE COILS */}
+            <div className="open-spine-center" data-notebook-part="spine" aria-hidden="true">
               <div className="spine-seam" />
               <div className="spine-spiral-rings">
                 {Array.from({ length: 8 }, (_, i) => (
                   <div key={i} className="open-spiral-coil">
+                    <span className="punch-hole left-punch" />
                     <span className="coil-shadow" />
                     <span className="coil-loop" />
+                    <span className="punch-hole right-punch" />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT PAGE: Active game entry */}
+            {/* RIGHT PAGE: Active Game Entry & Direct Play Action */}
             <div className="open-page right-page">
               <div className="page-paper-lines" />
               <div className="page-margin-red" />
@@ -503,10 +602,24 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               {/* Stacked paper edge thickness on the right */}
               <div
                 className="right-edge-thickness"
-                style={{ width: `${Math.max(3, (NOTEBOOK_PAGES.length - activePage) * 3)}px` }}
+                style={{
+                  width: `${Math.max(3, (NOTEBOOK_PAGES.length - activePage) * 3.5)}px`,
+                }}
               />
 
               <div className="right-page-content">
+                {/* Mobile compact doodle snippet */}
+                <div className="mobile-doodle-strip" aria-hidden="true">
+                  <span className="mobile-doodle-star">✦</span>
+                  <span className="mobile-doodle-caption">
+                    {currentPage.id === 'flames'
+                      ? 'FLAMES letter elimination ritual ♡'
+                      : currentPage.id === 'name-number'
+                      ? 'A1Z26 cipher arithmetic notes ✓'
+                      : '80/20 harmony formula doodle ♡'}
+                  </span>
+                </div>
+
                 <div className="page-header-row">
                   <span className="eyebrow-handwritten">{currentPage.eyebrow}</span>
                   <span className="page-number-script">Page {currentPage.pageNumber}</span>
@@ -531,7 +644,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   ))}
                 </div>
 
-                {/* Play CTA Button */}
+                {/* Direct Play CTA Button */}
                 <div className="game-play-action">
                   <button
                     className="notebook-play-button"
@@ -563,7 +676,47 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               )}
             </div>
 
-            {/* 3D TURNING PAGE OVERLAY DURING FLIP */}
+            {/* ===================================================================
+                3. THE PHYSICAL 3D HINGED FRONT COVER (Opening / Closing Rotation)
+               =================================================================== */}
+            {(isOpening || isClosing || isSettling) && (
+              <div
+                className={`hinged-cover-overlay ${isOpening ? 'opening-motion' : ''} ${
+                  isClosing ? 'closing-motion' : ''
+                } ${isSettling ? 'settling-motion' : ''}`}
+                data-notebook-part="front-cover"
+                aria-hidden="true"
+              >
+                {/* Outer Pink Cloth Cover Face */}
+                <div className="hinged-cover-face cover-face-outer pp-book-cover-front">
+                  <div className="cover-grain-overlay" />
+                  <div className="cover-border-emboss" />
+                  <div className="cover-title-group">
+                    <span className="cover-script-small">my</span>
+                    <strong className="cover-main-title">NOTEBOOK</strong>
+                    <small className="cover-subtitle">paper games &amp; big feelings</small>
+                  </div>
+                  <b className="cover-signature">xoxo ♡</b>
+                </div>
+
+                {/* Inner Cream Endpaper Face */}
+                <div className="hinged-cover-face cover-face-inner">
+                  <div className="page-paper-lines" />
+                  <div className="inner-endpaper-content">
+                    <span className="endpaper-script">Welcome to my</span>
+                    <h3 className="endpaper-title">Childhood Notebook</h3>
+                    <p className="endpaper-note">
+                      Flip the pages to find classic pen-and-paper rituals, schoolyard math, and harmless fun.
+                    </p>
+                    <span className="endpaper-doodle">✦ ✎ ♡</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===================================================================
+                4. 3D TURNING PAGE OVERLAY DURING FLIP
+               =================================================================== */}
             {isFlipping && (
               <div
                 className={`turning-page-sheet turn-direction-${flipDirection}`}
@@ -572,49 +725,61 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 <div className="turning-page-face turning-page-front">
                   <div className="page-paper-lines" />
                   <div className="turning-shadow-curl" />
-                  <div className="turning-preview-text">
-                    {flipDirection === 'next' ? currentPage.title : prevTargetPage?.title}
+                  <div className="turning-content-preview">
+                    <span className="turning-tag">p. {currentPage.pageNumber}</span>
+                    <strong className="turning-title">{currentPage.title}</strong>
+                    <span className="turning-icon">✎</span>
                   </div>
                 </div>
                 <div className="turning-page-face turning-page-back">
                   <div className="page-paper-lines" />
                   <div className="turning-shadow-curl" />
-                  <div className="turning-preview-text">
-                    {flipDirection === 'next' ? nextTargetPage?.title : currentPage.title}
+                  <div className="turning-content-preview">
+                    <span className="turning-tag">
+                      p. {flipDirection === 'next' ? nextTargetPage?.pageNumber : prevTargetPage?.pageNumber}
+                    </span>
+                    <strong className="turning-title">
+                      {flipDirection === 'next' ? nextTargetPage?.title : prevTargetPage?.title}
+                    </strong>
+                    <span className="turning-icon">♡</span>
                   </div>
                 </div>
               </div>
             )}
           </div>
+        )}
+      </div>
 
-          {/* Bottom navigation dock */}
-          <div className="notebook-bottom-nav">
-            <button
-              className="page-turn-btn prev-btn"
-              onClick={handlePrevPage}
-              disabled={activePage <= 0 || isFlipping}
-              aria-label="Go to previous game"
-            >
-              <ChevronLeft size={18} />
-              <span>Previous Page</span>
-            </button>
+      {/* =========================================================================
+          5. BOTTOM DOCK CONTROLS (Previous, Counter, Next)
+         ========================================================================= */}
+      {isDisplayingSpread && (
+        <div className="notebook-bottom-nav">
+          <button
+            className="page-turn-btn prev-btn"
+            onClick={handlePrevPage}
+            disabled={activePage <= 0 || isFlipping}
+            aria-label="Go to previous game"
+          >
+            <ChevronLeft size={18} />
+            <span>Previous Page</span>
+          </button>
 
-            <div className="page-counter-pill">
-              <span className="counter-current">{activePage + 1}</span>
-              <span className="counter-sep">/</span>
-              <span className="counter-total">{NOTEBOOK_PAGES.length}</span>
-            </div>
-
-            <button
-              className="page-turn-btn next-btn"
-              onClick={handleNextPage}
-              disabled={activePage >= NOTEBOOK_PAGES.length - 1 || isFlipping}
-              aria-label="Go to next game"
-            >
-              <span>Next Page</span>
-              <ChevronRight size={18} />
-            </button>
+          <div className="page-counter-pill" aria-label={`Page ${activePage + 1} of ${NOTEBOOK_PAGES.length}`}>
+            <span className="counter-current">{activePage + 1}</span>
+            <span className="counter-sep">/</span>
+            <span className="counter-total">{NOTEBOOK_PAGES.length}</span>
           </div>
+
+          <button
+            className="page-turn-btn next-btn"
+            onClick={handleNextPage}
+            disabled={activePage >= NOTEBOOK_PAGES.length - 1 || isFlipping}
+            aria-label="Go to next game"
+          >
+            <span>Next Page</span>
+            <ChevronRight size={18} />
+          </button>
         </div>
       )}
     </div>

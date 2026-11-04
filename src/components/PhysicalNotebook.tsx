@@ -119,6 +119,7 @@ export const PhysicalNotebook = ({
     >
       <WebGLBoundary>
         <InteractiveNotebook
+          state={state}
           isOpen={isExpanded}
           onOpenChange={(open) => {
             onOpenChange?.(open);

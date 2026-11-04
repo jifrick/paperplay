@@ -1,22 +1,24 @@
 /* ==========================================================================
    PAPERPLAY Interactive 3D Notebook Stylesheet
-   Realistic 3D Perspective, Lighting, Page Flipping & Authentic Stationery
+   Realistic 3D Perspective, Physics-Based Hinged Cover, Page Flipping & Authentic Stationery
    ========================================================================== */
 
 :root {
   --nb-cover-bg: linear-gradient(135deg, #ea7088 0%, #e25b78 50%, #d84b6a 100%);
-  --nb-cover-border: #b83d5a;
+  --nb-cover-dark: #b83d5a;
+  --nb-cover-border: #99334c;
   --nb-paper-cream: #fff9f0;
-  --nb-paper-border: #ebe0d0;
+  --nb-paper-alt: #fcf4e8;
+  --nb-paper-border: #ede1d3;
   --nb-line-blue: rgba(185, 212, 232, 0.58);
-  --nb-margin-red: rgba(223, 150, 157, 0.76);
+  --nb-margin-red: rgba(223, 150, 157, 0.74);
   --nb-ink: #3b3236;
   --nb-ink-muted: #6b5d63;
   --nb-accent-coral: #f25575;
   --nb-accent-rose: #ea7088;
-  --nb-spiral-ring: linear-gradient(180deg, #d8ccd0 0%, #ffffff 35%, #9d858c 70%, #684f56 100%);
-  --nb-shadow-deep: rgba(68, 32, 43, 0.18);
-  --nb-shadow-soft: rgba(68, 32, 43, 0.08);
+  --nb-spiral-ring: linear-gradient(180deg, #e4dce0 0%, #ffffff 32%, #a89299 68%, #6d545b 100%);
+  --nb-shadow-deep: rgba(68, 28, 40, 0.22);
+  --nb-shadow-soft: rgba(68, 28, 40, 0.08);
 }
 
 .interactive-notebook-wrapper {
@@ -24,56 +26,183 @@
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  perspective: 1500px;
+  perspective: 1600px;
+  perspective-origin: 50% 48%;
   user-select: none;
   transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* ==========================================================================
-   1. CLOSED NOTEBOOK VIEW (3D Book with Mouse Tilt Parallax)
+   1. TOP NAVIGATION & CONTROL BAR
+   ========================================================================== */
+
+.notebook-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 0 6px;
+  animation: fadeInBar 0.35s ease-out forwards;
+}
+
+@keyframes fadeInBar {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notebook-page-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none;
+}
+
+.notebook-page-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.notebook-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(220, 180, 190, 0.45);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nb-ink-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.notebook-tab-pill:hover {
+  background: #ffffff;
+  color: var(--nb-accent-coral);
+  border-color: rgba(242, 85, 117, 0.35);
+  transform: translateY(-1px);
+}
+
+.notebook-tab-pill.active {
+  background: var(--nb-accent-coral);
+  color: #ffffff;
+  font-weight: 600;
+  border-color: var(--nb-accent-coral);
+  box-shadow: 0 4px 12px rgba(242, 85, 117, 0.25);
+}
+
+.tab-num {
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.notebook-close-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(190, 160, 170, 0.35);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nb-ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.notebook-close-button:hover {
+  background: #ffffff;
+  color: var(--nb-accent-coral);
+  border-color: rgba(242, 85, 117, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   2. THE 3D NOTEBOOK STAGE & GROUND SHADOW
+   ========================================================================== */
+
+.notebook-3d-stage {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+}
+
+.notebook-ground-shadow {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.25s ease-out, opacity 0.3s ease;
+}
+
+.notebook-ground-shadow.closed-shadow-mode {
+  inset: 16px -16px -32px 12px;
+  background: radial-gradient(ellipse at 50% 50%,
+      rgba(68, 28, 40, 0.35) 0%,
+      rgba(68, 28, 40, 0.14) 45%,
+      transparent 75%);
+  filter: blur(16px);
+}
+
+.notebook-ground-shadow.spread-shadow-mode {
+  inset: 16px 12px -28px 12px;
+  background: radial-gradient(ellipse at 50% 50%,
+      rgba(68, 28, 40, 0.25) 0%,
+      rgba(68, 28, 40, 0.08) 52%,
+      transparent 78%);
+  filter: blur(20px);
+}
+
+/* ==========================================================================
+   3. CLOSED NOTEBOOK VIEW (3D Book with Mouse Parallax)
    ========================================================================== */
 
 .interactive-notebook-closed {
   position: relative;
   width: min(340px, 86%);
-  height: 400px;
+  height: 410px;
   margin: 15px auto;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
+  transition: transform 0.22s cubic-bezier(0.25, 1, 0.5, 1);
   border-radius: 6px 18px 18px 6px;
   outline: none;
+  z-index: 5;
 }
 
 .interactive-notebook-closed:focus-visible {
   box-shadow: 0 0 0 4px rgba(242, 85, 117, 0.4);
 }
 
-/* Atmospheric Cast Shadow */
-.closed-shadow {
-  position: absolute;
-  inset: 12px -16px -28px 10px;
-  background: radial-gradient(ellipse at 50% 50%, rgba(68, 28, 40, 0.32) 0%, rgba(68, 28, 40, 0.12) 45%, transparent 75%);
-  filter: blur(14px);
-  z-index: 1;
-  pointer-events: none;
-  transition: transform 0.22s ease-out, opacity 0.3s ease;
-}
-
 /* Physical Back Cover */
 .closed-back-cover {
   position: absolute;
-  inset: 6px -4px -6px 12px;
+  inset: 6px -4px -6px 14px;
   background: linear-gradient(135deg, #c74864 0%, #b83d5a 100%);
   border-radius: 4px 20px 20px 4px;
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
 
-/* Layered Paper Edge (Real multi-sheet depth) */
+/* Layered Paper Edge (Real multi-sheet paper stack thickness) */
 .closed-paper-stack {
   position: absolute;
-  inset: 4px -1px -3px 18px;
+  inset: 4px -1px -3px 20px;
   z-index: 3;
   pointer-events: none;
 }
@@ -81,24 +210,22 @@
 .closed-paper-edge-sheet {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-      0deg,
+  background: repeating-linear-gradient(0deg,
       #fff8ed 0px,
       #fff8ed 5px,
-      rgba(225, 206, 189, 0.9) 6px
-    ),
+      rgba(225, 206, 189, 0.9) 6px),
     #fff8ed;
   border-radius: 2px 16px 16px 2px;
   box-shadow: 1px 1px 0 rgba(190, 160, 165, 0.35);
 }
 
-/* Spine & Metal Spiral Rings */
+/* Spine & Metal Spiral Wire Rings */
 .closed-spine {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 22px;
+  width: 24px;
   z-index: 6;
   border-radius: 8px 0 0 8px;
   background: linear-gradient(90deg, #99334c 0%, #b83d5a 35%, #d15673 80%, #99334c 100%);
@@ -125,32 +252,35 @@
 
 .closed-ring {
   position: relative;
-  width: 28px;
-  height: 10px;
+  width: 30px;
+  height: 11px;
   margin-left: 2px;
   background: var(--nb-spiral-ring);
   border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.85);
 }
 
 .closed-ring .ring-highlight {
   position: absolute;
-  left: 4px;
+  left: 5px;
   top: 2px;
-  width: 14px;
+  width: 15px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   border-radius: 2px;
 }
 
-/* Front Cover */
+/* Front Cover Face */
 .closed-front-cover {
   position: absolute;
-  inset: 0 0 0 12px;
+  inset: 0 0 0 14px;
   border-radius: 6px 18px 18px 6px;
   background: var(--nb-cover-bg);
   border: 1px solid var(--nb-cover-border);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.2), 3px 6px 14px rgba(68, 28, 40, 0.18);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.25),
+    3px 6px 16px rgba(68, 28, 40, 0.2);
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -164,20 +294,18 @@
 .cover-grain-overlay {
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.03) 0px,
-    rgba(255, 255, 255, 0.03) 1px,
-    transparent 1px,
-    transparent 4px
-  );
+  background-image: repeating-linear-gradient(45deg,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 4px);
   pointer-events: none;
 }
 
 .cover-border-emboss {
   position: absolute;
   inset: 16px;
-  border: 1.5px dashed rgba(255, 255, 255, 0.38);
+  border: 1.5px dashed rgba(255, 255, 255, 0.42);
   border-radius: 4px 12px 12px 4px;
   pointer-events: none;
 }
@@ -193,18 +321,18 @@
 
 .cover-script-small {
   font-family: 'Caveat', cursive;
-  font-size: 42px;
+  font-size: 44px;
   line-height: 1;
   color: #fff8f8;
-  text-shadow: 0 2px 4px rgba(95, 28, 45, 0.3);
+  text-shadow: 0 2px 5px rgba(95, 28, 45, 0.32);
   transform: rotate(-3deg);
 }
 
 .cover-main-title {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 34px;
-  letter-spacing: 0.08em;
+  font-size: 35px;
+  letter-spacing: 0.09em;
   color: #ffffff;
   text-shadow: 0 3px 6px rgba(95, 28, 45, 0.35);
   margin: 4px 0 8px;
@@ -212,18 +340,18 @@
 
 .cover-subtitle {
   font-family: 'Caveat', cursive;
-  font-size: 21px;
-  color: rgba(255, 240, 243, 0.92);
+  font-size: 22px;
+  color: rgba(255, 240, 243, 0.95);
   letter-spacing: 0.02em;
 }
 
 .cover-signature {
   position: absolute;
-  right: 26px;
-  bottom: 24px;
+  right: 28px;
+  bottom: 26px;
   font-family: 'Caveat', cursive;
   font-size: 28px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.88);
   transform: rotate(-6deg);
   z-index: 2;
 }
@@ -235,23 +363,23 @@
   transition: opacity 0.2s ease;
 }
 
-/* Floating "Open your notebook" Cue */
+/* Floating "Open your notebook" Interaction Cue */
 .open-cue-pill {
   position: absolute;
-  bottom: -16px;
+  bottom: -18px;
   left: 50%;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
+  padding: 9px 20px;
   background: #ffffff;
   color: var(--nb-ink);
   border-radius: 30px;
   box-shadow: 0 8px 24px rgba(68, 28, 40, 0.16), 0 2px 6px rgba(68, 28, 40, 0.08);
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 14px;
   z-index: 10;
   transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   border: 1px solid rgba(242, 85, 117, 0.25);
@@ -291,138 +419,63 @@
 }
 
 @keyframes floatCue {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-4px); }
+
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
 }
 
 @keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.4); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.35;
+    transform: scale(1.4);
+  }
 }
 
 /* ==========================================================================
-   2. OPEN NOTEBOOK EXPERIENCE (Interactive Two-Page Spread)
-   ========================================================================== */
+   4. OPEN NOTEBOOK SPREAD (Realistic Two-Page Workstation)
+   ========================================================================= */
 
-.interactive-notebook-open {
+.open-book-spread {
   position: relative;
-  width: 100%;
-  margin: 0 auto;
-  animation: bookOpenSpread 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 490px;
+  border-radius: 6px 14px 14px 6px;
+  perspective: 1500px;
+  transform-style: preserve-3d;
+  z-index: 4;
 }
 
-@keyframes bookOpenSpread {
-  0% {
-    opacity: 0.3;
-    transform: scale(0.94) translateY(12px);
+.interactive-notebook-wrapper.is-open .open-book-spread {
+  animation: spreadReveal 0.65s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+@keyframes spreadReveal {
+  from {
+    opacity: 0.6;
+    transform: scale(0.97) translateY(8px);
   }
-  100% {
+
+  to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
-/* Top bar with tabs & close button */
-.notebook-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 0 6px;
-}
-
-.notebook-page-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 2px;
-}
-
-.notebook-tab-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 15px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(220, 180, 190, 0.45);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--nb-ink-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.notebook-tab-pill:hover {
-  background: #ffffff;
-  color: var(--nb-accent-coral);
-  border-color: rgba(242, 85, 117, 0.35);
-  transform: translateY(-1px);
-}
-
-.notebook-tab-pill.active {
-  background: var(--nb-accent-coral);
-  color: #ffffff;
-  font-weight: 600;
-  border-color: var(--nb-accent-coral);
-  box-shadow: 0 4px 12px rgba(242, 85, 117, 0.25);
-}
-
-.tab-num {
-  font-family: 'Caveat', cursive;
-  font-size: 15px;
-  opacity: 0.85;
-}
-
-.notebook-close-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(190, 160, 170, 0.35);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--nb-ink);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.notebook-close-button:hover {
-  background: #ffffff;
-  color: var(--nb-accent-coral);
-  border-color: rgba(242, 85, 117, 0.4);
-  transform: translateY(-1px);
-}
-
-/* Two-Page Open Book Spread */
-.open-book-spread {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 480px;
-  border-radius: 6px 14px 14px 6px;
-  perspective: 1400px;
-  transform-style: preserve-3d;
-}
-
-/* Spread Underneath Shadow */
-.open-spread-shadow {
-  position: absolute;
-  inset: 12px 10px -22px 10px;
-  background: radial-gradient(ellipse at 50% 50%, rgba(68, 28, 40, 0.22) 0%, rgba(68, 28, 40, 0.08) 50%, transparent 75%);
-  filter: blur(16px);
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Base Cover rim under pages */
+/* Base Cover rim under open spread */
 .open-base-cover {
   position: absolute;
   inset: -6px -8px -8px -6px;
@@ -432,11 +485,25 @@
   box-shadow: 0 16px 36px rgba(58, 22, 32, 0.18);
 }
 
+/* Multi-sheet edge stack layers */
+.open-paper-edge-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.open-paper-edge-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 14px 14px 4px;
+}
+
 /* General Page Styling */
 .open-page {
   position: relative;
   background-color: var(--nb-paper-cream);
-  min-height: 480px;
+  min-height: 490px;
   padding: 34px 30px 38px;
   z-index: 4;
   overflow: hidden;
@@ -445,28 +512,26 @@
 .open-page.left-page {
   border-radius: 4px 0 0 4px;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: inset -14px 0 18px -10px rgba(0, 0, 0, 0.09);
-  padding-right: 36px;
+  box-shadow: inset -16px 0 20px -10px rgba(0, 0, 0, 0.1);
+  padding-right: 38px;
 }
 
 .open-page.right-page {
   border-radius: 0 12px 12px 0;
   border-left: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: inset 14px 0 18px -10px rgba(0, 0, 0, 0.09);
-  padding-left: 36px;
+  box-shadow: inset 16px 0 20px -10px rgba(0, 0, 0, 0.1);
+  padding-left: 38px;
 }
 
-/* Notebook Rules & Margin */
+/* Notebook Rules & Red Margin */
 .page-paper-lines {
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent 0px,
-    transparent 37px,
-    var(--nb-line-blue) 37px,
-    var(--nb-line-blue) 38px
-  );
+  background-image: repeating-linear-gradient(0deg,
+      transparent 0px,
+      transparent 37px,
+      var(--nb-line-blue) 37px,
+      var(--nb-line-blue) 38px);
   pointer-events: none;
   opacity: 0.85;
 }
@@ -475,7 +540,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 48px;
+  right: 50px;
   width: 1.5px;
   background: var(--nb-margin-red);
   pointer-events: none;
@@ -485,7 +550,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 48px;
+  left: 50px;
   width: 1.5px;
   background: var(--nb-margin-red);
   pointer-events: none;
@@ -497,14 +562,13 @@
   left: 0;
   top: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    #ede0d0 0px,
-    #ede0d0 2px,
-    rgba(220, 195, 175, 0.7) 3px
-  );
-  border-right: 1px solid rgba(180, 140, 150, 0.2);
+  background: repeating-linear-gradient(90deg,
+      #ede0d0 0px,
+      #ede0d0 2px,
+      rgba(220, 195, 175, 0.7) 3px);
+  border-right: 1px solid rgba(180, 140, 150, 0.22);
   pointer-events: none;
+  transition: width 0.3s ease;
 }
 
 .right-edge-thickness {
@@ -512,14 +576,13 @@
   right: 0;
   top: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    #ede0d0 0px,
-    #ede0d0 2px,
-    rgba(220, 195, 175, 0.7) 3px
-  );
-  border-left: 1px solid rgba(180, 140, 150, 0.2);
+  background: repeating-linear-gradient(90deg,
+      #ede0d0 0px,
+      #ede0d0 2px,
+      rgba(220, 195, 175, 0.7) 3px);
+  border-left: 1px solid rgba(180, 140, 150, 0.22);
   pointer-events: none;
+  transition: width 0.3s ease;
 }
 
 /* Center Spine Binding */
@@ -528,7 +591,7 @@
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 24px;
+  width: 26px;
   transform: translateX(-50%);
   z-index: 10;
   pointer-events: none;
@@ -541,7 +604,7 @@
   bottom: 0;
   width: 2px;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, rgba(60, 25, 35, 0.25), rgba(60, 25, 35, 0.15));
+  background: linear-gradient(180deg, rgba(60, 25, 35, 0.3), rgba(60, 25, 35, 0.15));
 }
 
 .spine-spiral-rings {
@@ -555,15 +618,34 @@
 
 .open-spiral-coil {
   position: relative;
-  width: 26px;
+  width: 28px;
   height: 12px;
   left: -1px;
+}
+
+.punch-hole {
+  position: absolute;
+  top: 2px;
+  width: 6px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3c242c;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6);
+  opacity: 0.75;
+}
+
+.punch-hole.left-punch {
+  left: -4px;
+}
+
+.punch-hole.right-punch {
+  right: -4px;
 }
 
 .coil-shadow {
   position: absolute;
   inset: 3px -3px -3px 3px;
-  background: rgba(60, 25, 35, 0.2);
+  background: rgba(60, 25, 35, 0.25);
   border-radius: 8px;
   filter: blur(2px);
 }
@@ -573,11 +655,11 @@
   inset: 0;
   background: var(--nb-spiral-ring);
   border-radius: 8px;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.85), 0 2px 4px rgba(0, 0, 0, 0.18);
 }
 
 /* ==========================================================================
-   PAGE CONTENT: Left Page (Doodles, Rituals, Notes)
+   5. PAGE CONTENT: Left Page (Doodles, Rituals, Formulas)
    ========================================================================== */
 
 .left-page-content {
@@ -592,7 +674,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .doodle-badge {
@@ -604,14 +686,14 @@
 
 .doodle-star {
   color: #df637d;
-  font-size: 18px;
+  font-size: 19px;
 }
 
 .left-doodle-area {
-  margin: 10px 0 22px;
+  margin: 8px 0 20px;
   padding: 16px 18px;
-  background: rgba(255, 245, 235, 0.55);
-  border: 1px dashed rgba(223, 150, 157, 0.5);
+  background: rgba(255, 245, 235, 0.58);
+  border: 1px dashed rgba(223, 150, 157, 0.55);
   border-radius: 8px;
 }
 
@@ -710,7 +792,7 @@
   font-family: 'Space Grotesk', monospace;
   font-size: 13.5px;
   color: var(--nb-ink);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   padding: 6px 10px;
   border-radius: 4px;
 }
@@ -786,7 +868,7 @@
 }
 
 /* ==========================================================================
-   PAGE CONTENT: Right Page (Active Game Entry & Action)
+   6. PAGE CONTENT: Right Page (Active Game Entry & Play Button)
    ========================================================================== */
 
 .right-page-content {
@@ -795,6 +877,10 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+.mobile-doodle-strip {
+  display: none;
 }
 
 .eyebrow-handwritten {
@@ -824,7 +910,7 @@
 .title-doodle-underline {
   display: block;
   height: 3px;
-  width: 90px;
+  width: 95px;
   background: var(--nb-accent-coral);
   border-radius: 2px;
   margin-top: 4px;
@@ -859,7 +945,7 @@
   gap: 5px;
   padding: 4px 11px;
   border-radius: 6px;
-  background: rgba(255, 240, 245, 0.8);
+  background: rgba(255, 240, 245, 0.85);
   border: 1px solid rgba(242, 85, 117, 0.25);
   font-family: 'Space Grotesk', sans-serif;
   font-size: 12.5px;
@@ -924,7 +1010,7 @@
 }
 
 /* ==========================================================================
-   DOG-EAR CORNER TURNING CONTROLS (Clickable Page Corners)
+   7. DOG-EAR CORNER TURNING CONTROLS
    ========================================================================== */
 
 .page-corner {
@@ -955,16 +1041,16 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 0 32px 32px;
-  border-color: transparent transparent #ecd9c7 transparent;
+  border-width: 0 0 34px 34px;
+  border-color: transparent transparent #ebd9c7 transparent;
   box-shadow: -3px -3px 5px rgba(0, 0, 0, 0.12);
   transition: all 0.25s ease;
 }
 
 .dog-ear-right:hover .corner-fold {
-  border-width: 0 0 42px 42px;
+  border-width: 0 0 44px 44px;
   border-color: transparent transparent #dfc2aa transparent;
-  box-shadow: -5px -5px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: -5px -5px 9px rgba(0, 0, 0, 0.18);
 }
 
 .dog-ear-left .corner-fold {
@@ -974,21 +1060,21 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 32px 0 0 32px;
-  border-color: transparent transparent transparent #ecd9c7;
+  border-width: 34px 0 0 34px;
+  border-color: transparent transparent transparent #ebd9c7;
   box-shadow: 3px -3px 5px rgba(0, 0, 0, 0.12);
   transition: all 0.25s ease;
 }
 
 .dog-ear-left:hover .corner-fold {
-  border-width: 42px 0 0 42px;
+  border-width: 44px 0 0 44px;
   border-color: transparent transparent transparent #dfc2aa;
-  box-shadow: 5px -5px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 5px -5px 9px rgba(0, 0, 0, 0.18);
 }
 
 .corner-tooltip {
   position: absolute;
-  bottom: 44px;
+  bottom: 46px;
   padding: 4px 8px;
   background: var(--nb-ink);
   color: #ffffff;
@@ -1016,7 +1102,147 @@
 }
 
 /* ==========================================================================
-   3D PAGE FLIP ANIMATION (Realistic Sheet Curl & Rotation)
+   8. THE 3D HINGED FRONT COVER (Physical Opening & Closing Rotation)
+   ========================================================================== */
+
+.hinged-cover-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 50%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  z-index: 35;
+  pointer-events: none;
+}
+
+.hinged-cover-overlay.opening-motion {
+  animation: coverOpenRotate 0.68s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+.hinged-cover-overlay.settling-motion {
+  transform: rotateY(-180deg);
+  animation: coverSettle 0.18s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+}
+
+.hinged-cover-overlay.closing-motion {
+  animation: coverCloseRotate 0.62s cubic-bezier(0.25, 1, 0.4, 1) forwards;
+}
+
+@keyframes coverOpenRotate {
+  0% {
+    transform: rotateY(0deg);
+    box-shadow: 0 10px 24px rgba(68, 28, 40, 0.25);
+  }
+
+  45% {
+    transform: rotateY(-90deg) scale(1.02);
+    box-shadow: -15px 15px 35px rgba(68, 28, 40, 0.2);
+  }
+
+  100% {
+    transform: rotateY(-180deg);
+    box-shadow: 0 8px 18px rgba(68, 28, 40, 0.15);
+  }
+}
+
+@keyframes coverSettle {
+  0% {
+    transform: rotateY(-182deg);
+  }
+
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes coverCloseRotate {
+  0% {
+    transform: rotateY(-180deg);
+    box-shadow: 0 8px 18px rgba(68, 28, 40, 0.15);
+  }
+
+  55% {
+    transform: rotateY(-90deg) scale(1.02);
+    box-shadow: 15px 15px 35px rgba(68, 28, 40, 0.2);
+  }
+
+  100% {
+    transform: rotateY(0deg);
+    box-shadow: 0 10px 24px rgba(68, 28, 40, 0.25);
+  }
+}
+
+.hinged-cover-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.cover-face-outer {
+  border-radius: 0 12px 12px 0;
+  background: var(--nb-cover-bg);
+  border: 1px solid var(--nb-cover-border);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-align: center;
+}
+
+.cover-face-inner {
+  border-radius: 12px 0 0 12px;
+  background: var(--nb-paper-cream);
+  border: 1px solid var(--nb-paper-border);
+  transform: rotateY(180deg);
+  box-shadow: inset -10px 0 16px rgba(0, 0, 0, 0.08);
+  padding: 34px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.inner-endpaper-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.endpaper-script {
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  color: var(--nb-accent-coral);
+}
+
+.endpaper-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--nb-ink);
+  margin: 4px 0 12px;
+}
+
+.endpaper-note {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--nb-ink-muted);
+  max-width: 320px;
+  margin: 0 auto 16px;
+}
+
+.endpaper-doodle {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  color: var(--nb-accent-coral);
+}
+
+/* ==========================================================================
+   9. 3D TURNING PAGE OVERLAY DURING FLIP
    ========================================================================== */
 
 .turning-page-sheet {
@@ -1032,22 +1258,24 @@
 .turn-direction-next {
   right: 0;
   transform-origin: left center;
-  animation: flipSheetNext 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: flipSheetNext 0.52s cubic-bezier(0.25, 1, 0.45, 1) forwards;
 }
 
 .turn-direction-prev {
   left: 0;
   transform-origin: right center;
-  animation: flipSheetPrev 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: flipSheetPrev 0.52s cubic-bezier(0.25, 1, 0.45, 1) forwards;
 }
 
 @keyframes flipSheetNext {
   0% {
     transform: rotateY(0deg);
   }
+
   50% {
-    transform: rotateY(-90deg) scale(0.98);
+    transform: rotateY(-90deg) scale(0.98) translateZ(12px);
   }
+
   100% {
     transform: rotateY(-180deg);
   }
@@ -1057,9 +1285,11 @@
   0% {
     transform: rotateY(0deg);
   }
+
   50% {
-    transform: rotateY(90deg) scale(0.98);
+    transform: rotateY(90deg) scale(0.98) translateZ(12px);
   }
+
   100% {
     transform: rotateY(180deg);
   }
@@ -1073,8 +1303,10 @@
   box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 30px;
 }
 
 .turning-page-front {
@@ -1089,19 +1321,39 @@
 .turning-shadow-curl {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.15) 0%, transparent 40%, rgba(0, 0, 0, 0.08) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0%, transparent 40%, rgba(0, 0, 0, 0.08) 100%);
+  pointer-events: none;
 }
 
-.turning-preview-text {
+.turning-content-preview {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.turning-tag {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  color: var(--nb-accent-coral);
+}
+
+.turning-title {
+  display: block;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 24px;
-  color: rgba(59, 50, 54, 0.25);
-  letter-spacing: -0.02em;
+  font-size: 26px;
+  color: var(--nb-ink);
+  margin: 6px 0;
+}
+
+.turning-icon {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  color: var(--nb-ink-muted);
 }
 
 /* ==========================================================================
-   BOTTOM DOCK CONTROLS (Previous / Counter / Next)
+   10. BOTTOM DOCK CONTROLS (Previous / Counter / Next)
    ========================================================================== */
 
 .notebook-bottom-nav {
@@ -1110,6 +1362,7 @@
   justify-content: space-between;
   margin-top: 18px;
   padding: 0 8px;
+  animation: fadeInBar 0.35s ease-out forwards;
 }
 
 .page-turn-btn {
@@ -1149,8 +1402,8 @@
   gap: 4px;
   padding: 6px 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(220, 185, 195, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(220, 185, 195, 0.45);
   font-family: 'Space Grotesk', sans-serif;
   font-size: 13px;
   font-weight: 600;
@@ -1167,49 +1420,54 @@
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN (320px to 1280px+)
+   11. RESPONSIVE DESIGN (320px to 1280px+)
    ========================================================================== */
 
 @media (max-width: 900px) {
   .open-book-spread {
-    min-height: 440px;
+    min-height: 450px;
   }
+
   .open-page {
     padding: 26px 22px 30px;
   }
+
   .game-entry-title {
     font-size: 26px;
   }
+
   .left-handwritten-note {
-    font-size: 19px;
+    font-size: 20px;
   }
 }
 
 @media (max-width: 720px) {
   .interactive-notebook-closed {
-    width: min(290px, 88%);
-    height: 350px;
+    width: min(290px, 88vw);
+    height: 360px;
   }
+
   .cover-main-title {
     font-size: 28px;
   }
+
   .cover-script-small {
-    font-size: 34px;
+    font-size: 36px;
   }
 
-  /* Single-page stacked mobile presentation */
+  /* Single-page stacked mobile layout */
   .open-book-spread {
     grid-template-columns: 1fr;
     min-height: auto;
   }
 
   .open-page.left-page {
-    display: none; /* In mobile, focus on the active game page directly */
+    display: none;
   }
 
   .open-page.right-page {
     border-radius: 8px;
-    padding: 24px 20px 28px;
+    padding: 22px 18px 28px;
     border: none;
     box-shadow: none;
   }
@@ -1219,11 +1477,34 @@
   }
 
   .open-page.right-page .page-margin-red {
-    left: 28px;
+    left: 24px;
+  }
+
+  .mobile-doodle-strip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255, 242, 245, 0.9);
+    border: 1px dashed rgba(242, 85, 117, 0.35);
+    margin-bottom: 12px;
+    width: fit-content;
+  }
+
+  .mobile-doodle-star {
+    color: var(--nb-accent-coral);
+    font-size: 14px;
+  }
+
+  .mobile-doodle-caption {
+    font-family: 'Caveat', cursive;
+    font-size: 16px;
+    color: var(--nb-ink);
   }
 
   .game-entry-title {
-    font-size: 24px;
+    font-size: 25px;
   }
 
   .game-summary {
@@ -1246,15 +1527,38 @@
   .page-turn-btn {
     padding: 8px 12px;
   }
+
+  .game-play-action {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .notebook-play-button {
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .play-direct-note {
+    text-align: center;
+    font-size: 16px;
+  }
 }
 
-/* Reduced motion preference */
+/* ==========================================================================
+   12. ACCESSIBILITY: REDUCED MOTION SUPPORT
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
+
   .interactive-notebook-closed,
-  .interactive-notebook-open,
+  .open-book-spread,
   .open-cue-pill,
   .cue-pulse-dot,
-  .turning-page-sheet {
+  .turning-page-sheet,
+  .hinged-cover-overlay {
     animation: none !important;
     transition: none !important;
     transform: none !important;
