@@ -121,7 +121,10 @@ const GameCard = ({ game, onNavigate, featured = false }: { game: GameId; onNavi
 
 const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
   const [notebookState, setNotebookState] = useState<NotebookState>('closed');
+  const [isInteractiveOpen, setIsInteractiveOpen] = useState(false);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
+
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     if (!media) return;
@@ -129,34 +132,73 @@ const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
     media.addEventListener?.('change', update);
     return () => media.removeEventListener?.('change', update);
   }, []);
+
+  // Keep the notebook strictly closed on page load — it only opens when
+  // the user explicitly clicks the notebook or the "Open notebook" CTA.
   useEffect(() => {
-    if (reducedMotion) {
-      setNotebookState('closed');
-      return;
-    }
-    const timers = [
-      window.setTimeout(() => setNotebookState('opening'), 220),
-      window.setTimeout(() => setNotebookState('open'), 1350),
-      window.setTimeout(() => setNotebookState('flipping'), 1550),
-      window.setTimeout(() => setNotebookState('settling'), 4200),
-      window.setTimeout(() => setNotebookState('closing'), 4650),
-      window.setTimeout(() => setNotebookState('closed'), 5850),
-    ];
-    return () => timers.forEach(window.clearTimeout);
+    if (reducedMotion) setNotebookState('closed');
   }, [reducedMotion]);
-  const openNotebook = (destination = '/games/flames') => {
+
+  const handleOpenNotebook = () => {
+    setIsInteractiveOpen(true);
+    setNotebookState('open');
+  };
+
+  const handleCloseNotebook = () => {
+    setIsInteractiveOpen(false);
+    setNotebookState('closed');
+  };
+
+  const openGameFromCard = (destination: string) => {
     onNavigate(destination);
   };
 
   return <>
-    <section className="cover-section">
-       <div className="cover-copy"><span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span><h1>Remember when a name could change your whole <em>afternoon?</em></h1><p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p><div className="hero-actions"><button className="primary-button large" onClick={() => openNotebook()}><BookOpen size={19} /> Open notebook <ArrowRight size={17} /></button><Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link></div><p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p></div>
-       <div className={`cover-art is-${notebookState}`}><div className="doodle doodle-star">✦</div><div className="hero-doodles" aria-hidden="true"><span className="doodle-heart">♡</span><span className="doodle-cross">A̶ + B̶</span><span className="doodle-math">2 + 2 = ?</span><span className="doodle-pencil">— — ✎</span></div><PhysicalNotebook state={notebookState} /></div>
+    <section className={`cover-section ${isInteractiveOpen ? 'is-notebook-expanded' : ''}`}>
+       <div className="cover-copy">
+         <span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span>
+         <h1>Remember when a name could change your whole <em>afternoon?</em></h1>
+         <p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p>
+         <div className="hero-actions">
+           {!isInteractiveOpen ? (
+             <button className="primary-button large" onClick={handleOpenNotebook}>
+               <BookOpen size={19} /> Open notebook <ArrowRight size={17} />
+             </button>
+           ) : (
+             <button className="primary-button large" onClick={() => onNavigate('/games/flames')}>
+               <Play size={18} /> Play FLAMES Classic <ArrowRight size={17} />
+             </button>
+           )}
+           <Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link>
+         </div>
+         <p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p>
+       </div>
+       <div className={`cover-art is-${notebookState} ${isInteractiveOpen ? 'is-expanded' : ''}`}>
+         <div className="doodle doodle-star">✦</div>
+         <div className="hero-doodles" aria-hidden="true">
+           <span className="doodle-heart">♡</span>
+           <span className="doodle-cross">A̶ + B̶</span>
+           <span className="doodle-math">2 + 2 = ?</span>
+           <span className="doodle-pencil">— — ✎</span>
+         </div>
+         <PhysicalNotebook
+           state={notebookState}
+           isOpen={isInteractiveOpen}
+           onOpenChange={(open) => {
+             if (open) handleOpenNotebook();
+             else handleCloseNotebook();
+           }}
+           onNavigate={onNavigate}
+           currentPageIndex={currentPageIndex}
+           onPageChange={setCurrentPageIndex}
+         />
+       </div>
     </section>
-      <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Three ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
-      <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={() => openNotebook(GAME_PATHS.flames)} featured /><GameCard game="name-number" onNavigate={() => openNotebook(GAME_PATHS['name-number'])} /><GameCard game="love-meter" onNavigate={() => openNotebook(GAME_PATHS['love-meter'])} /></section>
-     <section className="disclaimer-banner"><Info size={18} /><p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p></section>
-   </>;
+    <section className="disclaimer-banner">
+      <Info size={18} />
+      <p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p>
+    </section>
+  </>;
 };
 
 const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy' | 'contact'; onNavigate: (href: string) => void }) => {

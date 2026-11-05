@@ -89,23 +89,19 @@ describe('PAPERPLAY user flow', () => {
     expect(notebook).toHaveClass('is-closed');
   });
 
-  it('uses one explicit timeline and returns to the exact closed state', () => {
+  it('keeps the notebook strictly closed on page load — no auto-open timeline fires', () => {
     vi.useFakeTimers();
     try {
       const { container } = render(<App />);
       const notebook = () => container.querySelector('[data-notebook-state]');
+      // Should start closed
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+      // No auto-opening animation — advancing time should not change state
       act(() => { vi.advanceTimersByTime(220); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'opening');
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
       act(() => { vi.advanceTimersByTime(1130); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'open');
-      act(() => { vi.advanceTimersByTime(200); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'flipping');
-      act(() => { vi.advanceTimersByTime(2650); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'settling');
-      act(() => { vi.advanceTimersByTime(450); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'closing');
-      act(() => { vi.advanceTimersByTime(1200); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+      act(() => { vi.advanceTimersByTime(6000); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
     } finally {
       vi.useRealTimers();
