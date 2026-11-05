@@ -10,7 +10,15 @@
   overflow: hidden;
   isolation: isolate;
   transition: min-height 0.4s ease, height 0.4s ease;
+  cursor: pointer;
+  outline: none;
 }
+
+.pp-book-scene:focus-visible {
+  outline: 3px solid rgba(242, 85, 117, 0.45);
+  outline-offset: 4px;
+}
+
 
 .pp-book-scene.is-expanded-open {
   height: auto !important;

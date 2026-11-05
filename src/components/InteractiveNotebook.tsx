@@ -103,8 +103,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   const [visualPhase, setVisualPhase] = useState<VisualPhase>(isOpen ? 'open' : 'closed');
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
-  const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(
     () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
@@ -226,28 +224,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [visualPhase, activePage, isFlipping]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (visualPhase !== 'closed' || reducedMotion) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    setMouseTilt({
-      x: Math.max(-1, Math.min(1, (e.clientX - centerX) / (rect.width / 2))),
-      y: Math.max(-1, Math.min(1, (e.clientY - centerY) / (rect.height / 2))),
-    });
-  };
-
-  const handleMouseEnter = () => {
-    if (visualPhase === 'closed') {
-      setIsHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMouseTilt({ x: 0, y: 0 });
-  };
-
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -290,9 +266,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
       }`}
       aria-label="Interactive 3D notebook of childhood games"
       role="region"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
       onTouchStart={isDisplayingSpread ? handleTouchStart : undefined}
       onTouchEnd={isDisplayingSpread ? handleTouchEnd : undefined}
     >
@@ -405,17 +378,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               </div>
 
               <b className="cover-signature">xoxo ♡</b>
-
-              {isHovered && !reducedMotion && (
-                <div
-                  className="cover-specular"
-                  style={{
-                    background: `radial-gradient(circle at ${(mouseTilt.x + 1) * 50}% ${
-                      (mouseTilt.y + 1) * 50
-                    }%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 60%)`,
-                  }}
-                />
-              )}
             </div>
 
             <div className="open-cue-pill">

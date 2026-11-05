@@ -88,20 +88,27 @@ export const PhysicalNotebook = ({
   }, []);
 
   const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
-  const isStatic = reducedMotion || isJsdom || !webglAvailable;
   const isExpanded = Boolean(isOpen);
 
-  // In jsdom or reduced-motion environments,
-  // render the StaticNotebook to fulfill accessibility and test contracts.
-  if (isStatic) {
+  // When isOpen is false or state is closed (like on Homepage),
+  // always render the clean, strictly closed StaticNotebook!
+  // It opens ONLY on explicit click or keyboard Enter/Space.
+  if (!isExpanded || state === 'closed' || reducedMotion || isJsdom || !webglAvailable) {
     return (
       <div
         className={`pp-book-scene is-${state} is-static`}
         data-notebook-state={state}
         data-turning-pages="5"
         aria-label="A pink physical notebook"
-        role="img"
+        role="button"
+        tabIndex={0}
         onClick={() => onOpenChange?.(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenChange?.(true);
+          }
+        }}
       >
         <StaticNotebook />
       </div>
@@ -110,9 +117,7 @@ export const PhysicalNotebook = ({
 
   return (
     <div
-      className={`pp-book-scene is-${state} is-webgl ${
-        isExpanded ? 'is-expanded-open' : 'is-compact-closed'
-      }`}
+      className={`pp-book-scene is-${state} is-webgl is-expanded-open`}
       data-notebook-state={state}
       data-turning-pages="5"
       aria-label="A pink physical notebook"
@@ -121,7 +126,7 @@ export const PhysicalNotebook = ({
       <WebGLBoundary>
         <InteractiveNotebook
           state={state}
-          isOpen={isExpanded}
+          isOpen={true}
           onOpenChange={(open) => {
             onOpenChange?.(open);
           }}
