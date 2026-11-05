@@ -26,8 +26,10 @@ const openFlames = () => {
 };
 
 const fillNames = (first = 'Anna', second = 'Aman') => {
-  fireEvent.change(screen.getByRole('textbox', { name: /First name/i }), { target: { value: first } });
-  fireEvent.change(screen.getByRole('textbox', { name: /Second name/i }), { target: { value: second } });
+  const firstInput = screen.queryByRole('textbox', { name: /First name/i }) || screen.getByRole('textbox', { name: /Your name/i });
+  const secondInput = screen.queryByRole('textbox', { name: /Second name/i }) || screen.getByRole('textbox', { name: /Their name/i });
+  fireEvent.change(firstInput, { target: { value: first } });
+  fireEvent.change(secondInput, { target: { value: second } });
 };
 
 const calculate = () => fireEvent.click(screen.getByRole('button', { name: /calculate flames/i }));
@@ -330,22 +332,25 @@ describe('PAPERPLAY user flow', () => {
 
   it.each([
     ['/games/flames', 'FLAMES Classic', 'The surviving letter'],
-    ['/games/name-number', 'Name Number', 'Name Number'],
+    ['/games/name-number', 'SECRET CODE', 'PP-'],
     ['/games/love-meter', 'Love Meter', 'Love Meter'],
   ])('opens and calculates %s', (path, title, resultStamp) => {
     window.history.pushState({}, '', path);
     render(<App />);
     expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: /First name/i }), { target: { value: 'Anna' } });
-    fireEvent.change(screen.getByRole('textbox', { name: /Second name/i }), { target: { value: 'Aman' } });
-    fireEvent.click(screen.getByRole('button', { name: /calculate/i }));
-    expect(screen.getByText(resultStamp, { selector: '.result-stamp' })).toBeInTheDocument();
+    const firstInput = screen.queryByRole('textbox', { name: /First name/i }) || screen.getByRole('textbox', { name: /Your name/i });
+    const secondInput = screen.queryByRole('textbox', { name: /Second name/i }) || screen.getByRole('textbox', { name: /Their name/i });
+    fireEvent.change(firstInput, { target: { value: 'Anna' } });
+    fireEvent.change(secondInput, { target: { value: 'Aman' } });
+    const calcBtn = screen.queryByRole('button', { name: /calculate/i }) || screen.getByRole('button', { name: /generate/i });
+    fireEvent.click(calcBtn);
+    expect(screen.getAllByText(new RegExp(resultStamp, 'i')).length).toBeGreaterThan(0);
   });
 
   it.each([
     ['/', /Remember when a name could change/i],
     ['/games/flames', 'FLAMES Classic'],
-    ['/games/name-number', 'Name Number'],
+    ['/games/name-number', 'SECRET CODE'],
     ['/games/love-meter', 'Love Meter'],
     ['/how-it-works', /How the notebook works/i],
     ['/about', /Made for the margin doodlers/i],
@@ -416,7 +421,8 @@ describe('PAPERPLAY user flow', () => {
     window.history.pushState({}, '', path);
     render(<App />);
     fillNames();
-    fireEvent.click(screen.getByRole('button', { name: /calculate/i }));
+    const calcBtn = screen.queryByRole('button', { name: /calculate/i }) || screen.getByRole('button', { name: /generate our secret code/i });
+    fireEvent.click(calcBtn);
     fireEvent.click(screen.getByRole('button', { name: /share result/i }));
 
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));

@@ -9,6 +9,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/testSetup.ts',
     globals: true,
-    exclude: ['e2e/**', 'node_modules/**'],
+    exclude: ['e2e/**', 'node_modules/**', 'paperplay-master/**'],
   },
 });

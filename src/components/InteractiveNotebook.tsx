@@ -48,19 +48,19 @@ export const NOTEBOOK_PAGES: GamePageData[] = [
   {
     id: 'name-number',
     pageNumber: '02',
-    eyebrow: 'A1Z26, notebook style',
-    title: 'Name Number',
+    eyebrow: 'Create your private couple code',
+    title: 'SECRET CODE',
     route: '/games/name-number',
     accent: '#8b5cf6',
-    tagline: 'Turn every A–Z letter into a number and add up a deterministic score.',
+    tagline: 'Turn two names into one special code. Something only you two can share.',
     summary:
-      'A = 1, B = 2, C = 3, all the way to Z = 26. Every letter shows its exact value, subtotals add up in the margin, and the sum creates a transparent notebook score.',
-    ritualStep: 'A=1, B=2 ... Z=26 · Add subtotals · Find your combined number',
-    leftNoteHeader: '— A1Z26 cipher cheat sheet —',
+      'Two names enter, one private code is born. A deterministic cipher generates a unique couple code (PP-XXXX-XXXX) that belongs only to the two of you.',
+    ritualStep: 'Write two names · Interlock letters · Generate your secret code',
+    leftNoteHeader: '— the couple cipher —',
     leftNoteBody:
-      'The simplest cipher in school. No guessing, no hidden algorithms. Add both names together and check if your numbers align.',
+      'Two names. One secret code. Created from the letters of your names, deterministic and private to share between yourselves.',
     leftDoodle: 'cipher',
-    tags: ['A1Z26 standard', 'Transparent math', 'Step-by-step breakdown'],
+    tags: ['Couple secret code', 'Deterministic cipher', 'Private keepsake'],
   },
   {
     id: 'love-meter',
@@ -442,14 +442,14 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   {currentPage.leftDoodle === 'cipher' && (
                     <div className="cipher-doodle-art" aria-hidden="true">
                       <div className="cipher-grid">
-                        <div className="cipher-pair"><span>A</span><b>1</b></div>
-                        <div className="cipher-pair"><span>B</span><b>2</b></div>
-                        <div className="cipher-pair"><span>C</span><b>3</b></div>
+                        <div className="cipher-pair"><span>A</span><b>7</b></div>
+                        <div className="cipher-pair"><span>N</span><b>K</b></div>
+                        <div className="cipher-pair"><span>M</span><b>9</b></div>
                         <div className="cipher-pair"><span>...</span><b>...</b></div>
-                        <div className="cipher-pair"><span>Z</span><b>26</b></div>
+                        <div className="cipher-pair"><span>Z</span><b>X</b></div>
                       </div>
                       <div className="cipher-calc-scribble">
-                        <code>Anna = 1 + 14 + 14 + 1 = 30</code>
+                        <code>Anna + Aman ➔ PP-7K29-X48A</code>
                         <span className="scribble-check">✓</span>
                       </div>
                     </div>

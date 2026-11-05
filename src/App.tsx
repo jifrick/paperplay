@@ -32,7 +32,7 @@ const GAME_PATHS: Record<GameId, string> = {
 
 const GAME_INFO: Record<GameId, { title: string; eyebrow: string; description: string; icon: typeof Heart; accent: string }> = {
   flames: { title: 'FLAMES Classic', eyebrow: 'A notebook classic', description: 'Write two names, then let the page count the matching letters.', icon: Heart, accent: 'coral' },
-  'name-number': { title: 'Name Number', eyebrow: 'A1Z26, notebook style', description: 'Turn every A–Z letter into a number and add up a transparent, deterministic score.', icon: Hash, accent: 'lavender' },
+  'name-number': { title: 'SECRET CODE', eyebrow: 'Create Your Private Couple Code', description: 'Two names. One secret code. Something only you two can share.', icon: Hash, accent: 'lavender' },
   'love-meter': { title: 'Love Meter', eyebrow: 'A playful score out of 100', description: 'Blend letter overlap with name-length balance for a completely fictional notebook reading.', icon: Gauge, accent: 'rose' },
 };
 
@@ -200,13 +200,13 @@ const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy' | 'c
 
 const HowItWorks = () => <div className="prose-grid">
   <article className="prose-card"><span className="numbered">01</span><h2>FLAMES Classic</h2><p>We normalize the two names into letter graphemes, pair matching occurrences one-to-one, and count only what is left. If the count is N, we circle through F, L, A, M, E, S, removing the Nth surviving letter until one remains.</p><div className="flames-key">{(['F', 'L', 'A', 'M', 'E', 'S'] as const).map((letter) => <span key={letter}><b>{letter}</b>{FLAMES_MEANINGS[letter]}</span>)}</div></article>
-  <article className="prose-card"><span className="numbered">02</span><h2>Name Number</h2><p>For this PAPERPLAY original, A = 1 through Z = 26. Spaces and punctuation are ignored, every letter's value is shown, and the two subtotals are added. Non-A–Z-only names are explained instead of guessed.</p></article>
+  <article className="prose-card"><span className="numbered">02</span><h2>SECRET CODE</h2><p>Two names enter, one private code is born. A deterministic cipher generates a unique couple code (PP-XXXX-XXXX) from both names. It belongs only to the two of you to share.</p></article>
   <article className="prose-card"><span className="numbered">03</span><h2>Love Meter</h2><p>This fictional score combines overlap (80%) and length balance (20%): <code>round(100 × (0.8 × M / max(A,B) + 0.2 × min(A,B) / max(A,B)))</code>. It is a name game, not a measure of compatibility.</p></article>
 </div>;
 
 const About = () => <div className="prose-grid single-column"><article className="prose-card"><h2>The brief history of a very important question</h2><p>Someone writes two names. Someone else reaches for a pencil. Matching letters become tiny crossed-out secrets, and suddenly the back of a notebook is the most exciting place in the world.</p><p>PAPERPLAY keeps that feeling without pretending the result knows anything about real life. It is a tactile little ritual for friends, crushes, fictional couples, and anyone who likes a good reveal.</p><div className="quote-card">“The answer was probably already in the notebook.”<span>— an extremely unofficial schoolyard philosopher</span></div></article></div>;
 const Privacy = () => <div className="prose-grid single-column privacy-content">
-  <article className="prose-card"><h2>About PAPERPLAY</h2><p>PAPERPLAY is a browser-based collection of playful name games, including FLAMES Classic, Name Number, and Love Meter. The results are for entertainment and do not provide scientific, relationship, or personal advice.</p></article>
+  <article className="prose-card"><h2>About PAPERPLAY</h2><p>PAPERPLAY is a browser-based collection of playful name games, including FLAMES Classic, Secret Code, and Love Meter. The results are for entertainment and do not provide scientific, relationship, or personal advice.</p></article>
   <article className="prose-card"><h2>Information handled</h2><p>Names and other text entered into a game are processed in the browser to calculate and display a result. The application keeps those values in temporary React state while the page is open. The current application does not send game inputs to a PAPERPLAY server, store them in an account, put them in result URLs, or save them to browser storage.</p><p>Sharing is optional. If you choose the browser share sheet or clipboard action, your browser handles that action. A downloaded result card is generated locally in the browser.</p></article>
   <article className="prose-card"><h2>Cookies and browser storage</h2><p>The current PAPERPLAY code does not set cookies and does not use <code>localStorage</code> or <code>sessionStorage</code>. Your browser, hosting provider, or security infrastructure may process ordinary technical request information when serving a website. Those infrastructure practices depend on the provider used for the deployment.</p></article>
   <article className="prose-card"><h2>Third-party services and advertising</h2><p>The current release does not include analytics, AdSense, advertising scripts, advertising cookies, or third-party tracking. Fonts and application dependencies are bundled with the site rather than loaded from an external font or analytics service.</p><p>If advertising or another third-party service is added later, this policy will be updated before activation to explain the service, the information it may process, applicable cookies or similar technologies, and available choices. No advertising is active in the current release.</p></article>
@@ -310,9 +310,82 @@ const FlamesResultView = ({ result, first, second, visibleRounds, reducedMotion,
   return <section className="result-card flames-result" aria-live="polite"><div className="result-heading"><span className="result-stamp">The surviving letter</span><div className="surviving-letter" aria-label={`Surviving letter: ${result.finalLetter}`}>{result.finalLetter}</div><p className="result-category">{result.category}</p><h2 className="surviving-title">{result.finalLetter} — {result.category}</h2><p className="result-copy-quote">{copy}</p></div><MatchingBreakdown first={first} second={second} /><div className="elimination-card"><div className="breakdown-heading"><div><span className="section-kicker">Circular elimination</span><h2>Watch the notebook count</h2></div><span className="count-badge">N = {result.remainingCount}</span></div><div className="flames-strip">{(['F', 'L', 'A', 'M', 'E', 'S'] as const).map((letter) => <span key={letter} className={letter === result.finalLetter ? 'survives' : ''}>{letter}<small>{FLAMES_MEANINGS[letter]}</small></span>)}</div><div className="round-list">{roundsToShow.map((round, index) => <div className="round-row" key={`${index}-${round.removed}`}><span className="round-number">{String(index + 1).padStart(2, '0')}</span><span>From <b>{round.lettersBefore.join(' · ')}</b>, count {round.count} from position {round.startingIndex + 1}.</span><strong title={round.removedMeaning}>cross out {round.removed}</strong></div>)}</div>{visibleRounds < result.rounds.length && !reducedMotion && <button className="notebook-button skip-button" type="button" onClick={onSkip}><SkipForward size={15} /> Skip animation · show all steps</button>}</div><p className="entertainment-note"><Info size={15} /> FLAMES is a game for entertainment, not a prediction of actual relationships or marriage outcomes.</p><ResultActions game="flames" names={{ first, second }} summary={{ result: `${result.finalLetter} — ${result.category}`, message: copy, detail: `${result.matchedPairs.length} matched pairs; ${result.remainingCount} letters entered the elimination.` }} mode={result.mode} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
 };
 
-const NumberResultView = ({ result, first, second, onReset, onChangeNames, onNavigate, onToast }: { result: NameNumberCalculation; first: string; second: string; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => <section className="result-card" aria-live="polite"><span className="result-stamp">Name Number</span><div className="number-result"><div><span className="result-category">{result.category}</span><h2>{result.combinedScore}</h2><p>combined notebook points</p></div><div className="score-columns"><ScoreColumn name={first} letters={result.first.letters} score={result.first.score} /><ScoreColumn name={second} letters={result.second.letters} score={result.second.score} /></div></div><CalculationDetails open><p><b>{first.trim()}</b> adds {result.first.score}; <b>{second.trim()}</b> adds {result.second.score}. Combined: {result.first.score} + {result.second.score} = {result.combinedScore}. Dividing {result.combinedScore} by 5 leaves remainder {result.categoryIndex}, which selects “{result.category}”.</p></CalculationDetails>{result.unsupportedCharacters && <p className="input-note"><Info size={14} /> Only A–Z letters receive values; other characters were left out of this subtotal.</p>}<p className="entertainment-note"><Info size={15} /> A1Z26 is a PAPERPLAY game for entertainment, not numerology, science, or relationship advice.</p><ResultActions game="name-number" names={{ first, second }} summary={{ result: `${result.combinedScore} points · ${result.category}`, message: 'A transparent A1Z26 notebook score.', detail: `${result.first.score} + ${result.second.score} = ${result.combinedScore}` }} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
+const SecretCodeResultView = ({ result, first, second, onReset, onChangeNames, onNavigate, onToast }: { result: any; first: string; second: string; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => {
+  const code = result.code || result.formattedCode || 'PP-7K29-X48A';
+  const handleCopy = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => onToast('Secret code copied to clipboard!')).catch(() => onToast('Code: ' + code));
+    } else {
+      onToast('Code: ' + code);
+    }
+  };
 
-const ScoreColumn = ({ name, letters, score }: { name: string; letters: Array<{ character: string; value: number }>; score: number }) => <div className="score-column"><span>{name.trim()}</span><div className="value-letters">{letters.map((letter, index) => <span key={`${letter.character}-${index}`}><b>{letter.character}</b><small>{letter.value}</small></span>)}</div><strong>{score}</strong><small>subtotal</small></div>;
+  const handleShareCode = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Our Secret Code — PAPERPLAY',
+          text: 'Our private secret code is ' + code + ' (made for ' + first.trim() + ' & ' + second.trim() + ')',
+          url: window.location.href,
+        });
+        onToast('Share sheet opened.');
+      } catch {
+        handleCopy();
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  return (
+    <section className="result-card secret-code-result-container" aria-live="polite">
+      <div className="secret-code-card-box">
+        <div className="secret-code-card-header">
+          <span className="secret-stamp-pill"><Sparkles size={13} /> Private Couple Code</span>
+          <span className="secret-pair-label">{first.trim()} &amp; {second.trim()}</span>
+        </div>
+
+        <p className="secret-code-tagline">Made for two names. Kept as one secret.</p>
+
+        <div className="secret-code-display-wrap">
+          <div className="secret-code-text">{code}</div>
+        </div>
+
+        <p className="secret-code-subnote">
+          This unique code is deterministically generated from both of your names. Keep it as your private couple keepsake.
+        </p>
+
+        <div className="secret-code-button-row">
+          <button type="button" className="notebook-button primary-button" onClick={handleCopy}>
+            Copy Secret Code
+          </button>
+          <button type="button" className="notebook-button secondary-button" onClick={handleShareCode}>
+            <Share2 size={16} /> Share Code
+          </button>
+          <button type="button" className="notebook-button text-button" onClick={onReset}>
+            <RotateCcw size={15} /> Create Another Code
+          </button>
+        </div>
+      </div>
+
+      <CalculationDetails>
+        <p>Your secret code <b>{code}</b> was created by encoding the combined letter stream of <b>{first.trim()}</b> and <b>{second.trim()}</b>. Reversing the order of names yields the exact same code.</p>
+      </CalculationDetails>
+
+      <p className="entertainment-note"><Info size={15} /> Secret Code is a playful PAPERPLAY experience for couples and friends, not cryptographic encryption.</p>
+
+      <ResultActions
+        game="name-number"
+        names={{ first, second }}
+        summary={{ result: code, message: 'Made for two names. Kept as one secret.', detail: 'Secret code for ' + first.trim() + ' & ' + second.trim() }}
+        onNavigate={onNavigate}
+        onReset={onReset}
+        onChangeNames={onChangeNames}
+        onToast={onToast}
+      />
+    </section>
+  );
+};
 
 const LoveMeterResultView = ({ result, first, second, onReset, onChangeNames, onNavigate, onToast }: { result: LoveMeterCalculation; first: string; second: string; onReset: () => void; onChangeNames: () => void; onNavigate: (href: string) => void; onToast: (message: string) => void }) => <section className="result-card" aria-live="polite"><span className="result-stamp">Love Meter</span><div className="meter-result"><div className="meter-circle" style={{ '--score': result.score } as React.CSSProperties}><strong>{result.score}</strong><span>%</span></div><div><span className="result-category">{result.band.label}</span><h2>A page full of possibilities.</h2><p>Two names, one completely fictional notebook score.</p></div></div><CalculationDetails><p>Found {result.matchedPairs} matched pairs across {result.firstLength} and {result.secondLength} scorable letters. Overlap contributes 80%; length balance contributes 20%. The rounded score is <b>{result.score}/100</b>.</p></CalculationDetails>{result.unsupportedCharacters && <p className="input-note"><Info size={14} /> The Love Meter scores A–Z letters only; other characters were left out of the formula.</p>}<p className="entertainment-note"><Info size={15} /> Just a name game for entertainment — not a real measure of compatibility.</p><ResultActions game="love-meter" names={{ first, second }} summary={{ result: `${result.score}/100 · ${result.band.label}`, message: 'A page full of possibilities.', detail: `${result.matchedPairs} matched pairs, ${result.firstLength}/${result.secondLength} scorable letters` }} onNavigate={onNavigate} onReset={onReset} onChangeNames={onChangeNames} onToast={onToast} /></section>;
 
@@ -372,7 +445,7 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
   const renderResult = () => {
     if (!result) return null;
     if (game === 'flames' && 'rounds' in result) return <FlamesResultView result={result} first={names.first} second={names.second} visibleRounds={visibleRounds} reducedMotion={reducedMotion} onSkip={() => setVisibleRounds(result.rounds.length)} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
-    if (game === 'name-number' && 'combinedScore' in result) return <NumberResultView result={result as NameNumberCalculation} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
+    if (game === 'name-number') return <SecretCodeResultView result={result} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
     if (game === 'love-meter' && 'band' in result) return <LoveMeterResultView result={result as LoveMeterCalculation} first={names.first} second={names.second} onReset={reset} onChangeNames={changeNames} onNavigate={onNavigate} onToast={setToast} />;
     return null;
   };
@@ -385,10 +458,10 @@ const GamePage = ({ game, onNavigate, query }: { game: GameId; onNavigate: (href
      <div className="game-heading"><div><span className="section-kicker"><Icon size={15} /> {info.eyebrow}</span><h1>{info.title}</h1><p>{info.description}</p></div><span className="page-number">p. {game === 'flames' ? '01' : game === 'name-number' ? '02' : '03'}</span></div>
     <form className="game-form" onSubmit={(event) => { event.preventDefault(); calculate(); }} noValidate>
        
-       <div className="name-inputs"><NotebookNameField id={`${game}-first-name`} label="First name" value={names.first} active={activeField === 'first'} reducedMotion={reducedMotion} inputRef={firstInput} onFocus={() => setActiveField('first')} onChange={(value) => updateName('first', value)} onEnter={calculate} /><div className="plus-mark" aria-hidden="true">+</div><NotebookNameField id={`${game}-second-name`} label="Second name" value={names.second} active={activeField === 'second'} reducedMotion={reducedMotion} inputRef={secondInput} onFocus={() => setActiveField('second')} onChange={(value) => updateName('second', value)} onEnter={calculate} /></div>
+       <div className="name-inputs"><NotebookNameField id={`${game}-first-name`} label={game === "name-number" ? "Your name" : "First name"} value={names.first} active={activeField === 'first'} reducedMotion={reducedMotion} inputRef={firstInput} onFocus={() => setActiveField('first')} onChange={(value) => updateName('first', value)} onEnter={calculate} /><div className="plus-mark" aria-hidden="true">+</div><NotebookNameField id={`${game}-second-name`} label={game === "name-number" ? "Their name" : "Second name"} value={names.second} active={activeField === 'second'} reducedMotion={reducedMotion} inputRef={secondInput} onFocus={() => setActiveField('second')} onChange={(value) => updateName('second', value)} onEnter={calculate} /></div>
        {(firstName?.hasUnsupportedCharacters || secondName?.hasUnsupportedCharacters) && <p className="input-note"><Info size={14} /> {hasNonLatinName ? 'Non-Latin letters are not supported by the current notebook games.' : `Spaces and punctuation are ignored. Symbols and emoji are shown for context but do not count; ${game === 'name-number' || game === 'love-meter' ? 'this page scores A–Z letters only.' : 'Latin-script letter graphemes are matched one at a time.'}`}</p>}
         <div className="tool-bar compact-tools"><div className="tool-buttons"><button type="button" className="notebook-button tool-button" onClick={undo} disabled={!history.length}><Undo2 size={16} /> Undo</button><button type="button" className="notebook-button tool-button" onClick={reset}><RotateCcw size={16} /> Reset</button></div></div>
-       <div className="form-submit"><button type="submit" className="notebook-button primary-button large"><Play size={17} fill="currentColor" /> Calculate {game === 'flames' ? 'FLAMES' : 'result'} <ArrowRight size={17} /></button><span>Press Enter anytime. You can edit names after a result.</span></div>
+       <div className="form-submit"><button type="submit" className="notebook-button primary-button large"><Play size={17} fill="currentColor" /> {game === 'flames' ? 'Calculate FLAMES' : game === 'name-number' ? 'Generate Our Secret Code' : 'Calculate result'} <ArrowRight size={17} /></button><span>Press Enter anytime. You can use nicknames or any names you choose.</span></div>
       {error && <p className="form-error" role="alert"><X size={16} /> {error}</p>}
     </form>
     {result && <div className="result-area">{renderResult()}</div>}

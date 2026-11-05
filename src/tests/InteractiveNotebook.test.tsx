@@ -76,7 +76,7 @@ describe('InteractiveNotebook component', () => {
 
     // Tabs
     expect(screen.getByRole('tab', { name: /01 FLAMES Classic/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /02 Name Number/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /02 SECRET CODE/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /03 Love Meter/i })).toBeInTheDocument();
 
     // Active page content
@@ -132,8 +132,8 @@ describe('InteractiveNotebook component', () => {
     });
 
     expect(onPageChange).toHaveBeenCalledWith(1);
-    expect(screen.getByRole('heading', { name: 'Name Number' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Play Name Number/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'SECRET CODE' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Play SECRET CODE/i })).toBeInTheDocument();
 
     const prevBtn = screen.getByRole('button', { name: 'Go to previous game' });
     fireEvent.click(prevBtn);
@@ -166,7 +166,7 @@ describe('InteractiveNotebook component', () => {
     });
 
     expect(onPageChange).toHaveBeenCalledWith(1);
-    expect(screen.getByRole('heading', { name: 'Name Number' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'SECRET CODE' })).toBeInTheDocument();
 
     const prevCorner = screen.getByRole('button', { name: 'Turn to previous page' });
     fireEvent.click(prevCorner);

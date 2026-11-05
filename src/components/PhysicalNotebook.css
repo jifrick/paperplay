@@ -1,3 +1,20 @@
+/* ==========================================================================
+   PAPERPLAY Physical Notebook Stylesheet (Premium 3D Physical Notebook)
+   Deep Burgundy Hardcover, Champagne Gold Foil, Layered Ivory Edge Stack & Ambient Shadow
+   ========================================================================== */
+
+:root {
+  /* Premium Deep Burgundy Journal Material */
+  --pn-cover-burgundy: linear-gradient(145deg, #4d1522 0%, #3a0d17 48%, #29080f 100%);
+  --pn-cover-border: rgba(220, 185, 140, 0.55);
+  --pn-spine-burgundy: linear-gradient(90deg, #2a070e 0%, #461420 38%, #571a28 72%, #320a14 100%);
+  --pn-gold-foil: linear-gradient(135deg, #faebd7 0%, #f6d28b 45%, #d4af37 80%, #aa8218 100%);
+  --pn-gold-foil-text: #f5d898;
+  --pn-gold-emboss-border: rgba(230, 195, 130, 0.45);
+  --pn-ring-metal: linear-gradient(180deg, #f0e6d6 0%, #ffffff 32%, #c9a96e 68%, #6d4f1d 100%);
+  --pn-soft-rose: #f3a6b5;
+}
+
 .pp-book-scene {
   --pp-book-w: min(360px, 100%);
   --pp-book-h: 410px;
@@ -7,18 +24,20 @@
   min-height: var(--pp-book-h);
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
   isolation: isolate;
-  transition: min-height 0.4s ease, height 0.4s ease;
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
   cursor: pointer;
   outline: none;
+  transition: min-height 0.4s ease, height 0.4s ease;
 }
 
 .pp-book-scene:focus-visible {
-  outline: 3px solid rgba(242, 85, 117, 0.45);
-  outline-offset: 4px;
+  outline: 3px solid rgba(212, 175, 55, 0.6);
+  outline-offset: 6px;
+  border-radius: 12px;
 }
-
 
 .pp-book-scene.is-expanded-open {
   height: auto !important;
@@ -37,15 +56,38 @@
   overflow: hidden;
 }
 
-/* The fallback deliberately remains a complete, closed cover. It is used for
-   reduced-motion users and browsers without WebGL instead of pretending that
-   a CSS animation can reproduce the same hinged model. */
+/* ==========================================================================
+   3D Closed Notebook Construction
+   ========================================================================== */
 .pp-book-static {
   position: relative;
-  width: min(292px, 82%);
-  height: min(340px, 82%);
-  transform: rotate(2deg);
-  filter: drop-shadow(15px 22px 20px rgba(89, 47, 57, .16));
+  width: min(290px, 82vw);
+  height: 380px;
+  transform-style: preserve-3d;
+  /* Baseline perspective resting on desk: slight natural rotation and soft tilt */
+  transform: rotate(2deg) rotateY(-4deg) rotateX(3deg);
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), filter 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  filter: drop-shadow(0 16px 26px rgba(35, 10, 18, 0.28)) drop-shadow(0 4px 10px rgba(35, 10, 18, 0.16));
+}
+
+/* Subtle, sophisticated 3D hover interaction:
+   gentle elevation, subtle 3D tilt, and deepened ambient shadow.
+   NOTE: Cover remains strictly, completely closed at all times. */
+.pp-book-scene:hover .pp-book-static {
+  transform: translateY(-9px) rotate(1.4deg) rotateY(-6deg) rotateX(4deg);
+  filter: drop-shadow(0 26px 38px rgba(35, 10, 18, 0.35)) drop-shadow(0 8px 18px rgba(35, 10, 18, 0.20));
+}
+
+/* Smooth physical click-down response */
+.pp-book-scene:active .pp-book-static {
+  transform: translateY(-3px) rotate(1.8deg) scale(0.99);
+  transition-duration: 0.12s;
+}
+
+/* Click-to-open smooth transition state when opening starts */
+.pp-book-scene.is-opening .pp-book-static {
+  transform: translateY(-6px) scale(1.02);
+  filter: drop-shadow(0 22px 34px rgba(35, 10, 18, 0.30));
 }
 
 .pp-book-static-back,
@@ -57,106 +99,216 @@
   inset: 0;
 }
 
+/* Back cover: thick hardcover cardstock boundary with rich wine undertones */
 .pp-book-static-back {
-  inset: 8px 0 0 16px;
+  inset: 8px -4px -6px 14px;
   border-radius: 4px 18px 18px 4px;
-  background: linear-gradient(135deg, #d4c5ae, #c8b89a);
+  background: linear-gradient(135deg, #2b0811 0%, #1e050b 100%);
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.45);
+  z-index: 1;
 }
 
+/* Paper block: authentic multi-sheet stack thickness & warm beige edge lines */
 .pp-book-static-paper {
-  inset: 5px 0 0 20px;
-  border-radius: 4px 16px 16px 4px;
+  inset: 5px -1px -3px 18px;
+  border-radius: 3px 16px 16px 3px;
   background:
-    linear-gradient(90deg, transparent 0 28px, rgba(223, 150, 157, .55) 29px 30px, transparent 31px),
-    repeating-linear-gradient(0deg, transparent 0 36px, rgba(185, 212, 232, .62) 37px 38px),
-    #fff8ed;
-  box-shadow: inset 0 0 15px rgba(80, 55, 55, .08);
+    linear-gradient(90deg, transparent 0 28px, rgba(223, 150, 157, 0.45) 29px 30px, transparent 31px),
+    repeating-linear-gradient(0deg, transparent 0 35px, rgba(185, 212, 232, 0.5) 36px 37px),
+    #fff9f0;
+  box-shadow: inset 0 0 14px rgba(60, 20, 30, 0.12);
+  z-index: 2;
 }
 
+/* Page layers: stepped layered page stack edges giving physical tactile volume */
 .pp-book-static-pages {
-  inset: 4px 0 0 20px;
-  overflow: hidden;
-  border-radius: 4px 16px 16px 4px;
+  inset: 4px 0 0 18px;
+  overflow: visible;
+  border-radius: 3px 16px 16px 3px;
+  z-index: 3;
 }
 
 .pp-book-static-page {
   position: absolute;
-  inset: 0 0 0 0;
-  border-radius: 4px 16px 16px 4px;
+  inset: 0;
+  border-radius: 3px 16px 16px 3px;
   background:
-    linear-gradient(90deg, transparent 0 28px, rgba(223, 150, 157, .42) 29px 30px, transparent 31px),
-    repeating-linear-gradient(0deg, transparent 0 36px, rgba(185, 212, 232, .52) 37px 38px),
-    #fff8ed;
-  box-shadow: 2px 4px 0 rgba(181, 145, 145, .15);
+    repeating-linear-gradient(0deg,
+      #fffaf2 0px,
+      #fffaf2 5px,
+      rgba(224, 208, 192, 0.85) 6px),
+    #fff9f0;
+  box-shadow: 1px 1px 0 rgba(140, 100, 110, 0.28);
 }
 
-.pp-book-static-page:nth-child(1) { transform: translateZ(1px) rotate(-.4deg); }
-.pp-book-static-page:nth-child(2) { transform: translate(1px, 1px) rotate(.35deg); }
-.pp-book-static-page:nth-child(3) { transform: translate(2px, 2px) rotate(-.25deg); }
-.pp-book-static-page:nth-child(4) { transform: translate(3px, 3px) rotate(.2deg); }
-.pp-book-static-page:nth-child(5) { transform: translate(4px, 4px) rotate(-.15deg); }
-.pp-book-static-page:nth-child(6) { transform: translate(5px, 5px) rotate(.1deg); }
-.pp-book-static-page:nth-child(7) { transform: translate(6px, 6px); }
+.pp-book-static-page:nth-child(1) { transform: translate(1px, 1px) rotate(-0.3deg); }
+.pp-book-static-page:nth-child(2) { transform: translate(2px, 2px) rotate(0.25deg); }
+.pp-book-static-page:nth-child(3) { transform: translate(3px, 3px) rotate(-0.2deg); }
+.pp-book-static-page:nth-child(4) { transform: translate(4px, 4px) rotate(0.18deg); }
+.pp-book-static-page:nth-child(5) { transform: translate(5px, 5px) rotate(-0.12deg); }
+.pp-book-static-page:nth-child(6) { transform: translate(6px, 6px) rotate(0.1deg); }
+.pp-book-static-page:nth-child(7) { transform: translate(7px, 7px); }
 
+/* Spine: binding in deep burgundy with warm champagne-gold wire rings */
 .pp-book-static-spine {
-  inset: 0 auto 0 14px;
-  width: 13px;
+  inset: 0 auto 0 8px;
+  width: 20px;
   border-radius: 8px 0 0 8px;
-  background: linear-gradient(90deg, rgba(200, 65, 93, .65), rgba(234, 112, 136, .3), rgba(200, 65, 93, .4));
-  box-shadow: 2px 0 5px rgba(66, 33, 42, .2);
+  background: var(--pn-spine-burgundy);
+  box-shadow: 2px 0 8px rgba(15, 3, 6, 0.45);
+  z-index: 6;
 }
 
 .pp-book-static-spine i {
   display: block;
-  width: 22px;
+  width: 26px;
   height: 9px;
-  margin-left: 8px;
+  margin-left: 6px;
   border-radius: 0 9px 9px 0;
-  background: #c8415d;
-  box-shadow: inset 0 2px 2px rgba(255, 255, 255, .25);
+  background: var(--pn-ring-metal);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.95);
 }
 
-.pp-book-static-spine i:first-child { margin-top: 45px; }
-.pp-book-static-spine i + i { margin-top: 38px; }
+.pp-book-static-spine i:first-child { margin-top: 36px; }
+.pp-book-static-spine i + i { margin-top: 32px; }
 
+/* Front Cover: Deep burgundy hardcover, subtle leather-grain texture, champagne gold details */
 .pp-book-static-cover {
-  z-index: 4;
+  inset: 0 0 0 14px;
+  z-index: 5;
   overflow: hidden;
-  border: 1px solid rgba(160, 128, 90, 0.4);
-  border-radius: 11px 19px 19px 11px;
-  color: #271d22;
+  border: 1px solid var(--pn-cover-border);
+  border-radius: 6px 18px 18px 6px;
   background:
-    repeating-linear-gradient(45deg, rgba(0,0,0,0.018) 0px, rgba(0,0,0,0.018) 1px, transparent 1px 4px),
-    linear-gradient(145deg, #fdfbf7 0%, #f5eddf 40%, #ede3d1 100%);
+    radial-gradient(ellipse at 40% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 65%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 4px),
+    var(--pn-cover-burgundy);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.5),
+    3px 6px 20px rgba(35, 10, 18, 0.32);
+  transition: box-shadow 0.4s ease;
 }
 
+.pp-book-scene:hover .pp-book-static-cover {
+  box-shadow:
+    inset 0 1px 3px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.45),
+    5px 10px 26px rgba(35, 10, 18, 0.40);
+}
+
+/* Subtle champagne-gold foil frame on front cover */
+.pp-book-static-cover::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1.5px dashed var(--pn-gold-emboss-border);
+  border-radius: 4px 12px 12px 4px;
+  pointer-events: none;
+}
+
+/* Soft contact shadow at bottom */
+.pp-book-static-cover::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  background: linear-gradient(0deg, rgba(15, 3, 6, 0.25), transparent);
+  pointer-events: none;
+}
+
+/* Typography on Cover: Champagne Gold Foil */
 .pp-book-static-cover span,
 .pp-book-static-cover strong,
 .pp-book-static-cover small,
 .pp-book-static-cover b {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   display: block;
 }
 
-.pp-book-static-cover span { top: 112px; left: 90px; font: 51px/.7 'Caveat', cursive; }
-.pp-book-static-cover strong { top: 151px; left: 62px; font: 700 37px 'Space Grotesk', sans-serif; letter-spacing: .04em; }
-.pp-book-static-cover small { top: 208px; left: 65px; font: 19px 'Caveat', cursive; }
-.pp-book-static-cover b { right: 34px; bottom: 31px; color: rgba(255, 255, 255, .78); font: 29px 'Caveat', cursive; transform: rotate(-7deg); }
-
-@media (max-width: 900px) {
-  .pp-book-scene { --pp-book-h: 390px; }
+.pp-book-static-cover span {
+  top: 104px;
+  left: 82px;
+  font: 48px/.7 'Caveat', cursive;
+  color: var(--pn-gold-foil-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transform: rotate(-3deg);
 }
 
-@media (max-width: 700px) {
-  .pp-book-scene { --pp-book-h: 360px; }
+.pp-book-static-cover strong {
+  top: 144px;
+  left: 56px;
+  font: 700 35px 'Space Grotesk', sans-serif;
+  letter-spacing: .12em;
+  color: #fff2d1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 12px rgba(246, 210, 139, 0.3);
+}
+
+.pp-book-static-cover small {
+  top: 202px;
+  left: 60px;
+  font: 20px 'Caveat', cursive;
+  color: #eed6b0;
+  letter-spacing: .03em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.pp-book-static-cover b {
+  right: 28px;
+  bottom: 26px;
+  color: var(--pn-soft-rose);
+  font: 27px 'Caveat', cursive;
+  transform: rotate(-6deg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Desktop, Tablet, Mobile
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .pp-book-scene { --pp-book-h: 390px; }
+  .pp-book-static { width: min(280px, 80vw); height: 365px; }
+}
+
+@media (max-width: 768px) {
+  .pp-book-scene { --pp-book-h: 370px; }
   .pp-book-canvas { width: 100% !important; }
-  .pp-book-static { width: min(270px, 82%); height: 315px; }
-  .pp-book-static-cover span { top: 103px; left: 82px; font-size: 45px; }
-  .pp-book-static-cover strong { top: 137px; left: 55px; font-size: 34px; }
-  .pp-book-static-cover small { top: 191px; left: 57px; font-size: 17px; }
+  .pp-book-static { width: min(270px, 82vw); height: 345px; }
+  .pp-book-static-cover span { top: 98px; left: 76px; font-size: 44px; }
+  .pp-book-static-cover strong { top: 136px; left: 50px; font-size: 33px; }
+  .pp-book-static-cover small { top: 192px; left: 54px; font-size: 19px; }
+  .pp-book-static-cover b { right: 24px; bottom: 24px; font-size: 25px; }
+}
+
+@media (max-width: 480px) {
+  .pp-book-scene { --pp-book-h: 340px; }
+  .pp-book-static { width: min(250px, 84vw); height: 320px; }
+  .pp-book-static-cover span { top: 88px; left: 66px; font-size: 38px; }
+  .pp-book-static-cover strong { top: 122px; left: 44px; font-size: 28px; }
+  .pp-book-static-cover small { top: 172px; left: 46px; font-size: 17px; }
+  .pp-book-static-cover b { right: 20px; bottom: 20px; font-size: 22px; }
+}
+
+@media (max-width: 360px) {
+  .pp-book-scene { --pp-book-h: 320px; }
+  .pp-book-static { width: min(235px, 86vw); height: 300px; }
+  .pp-book-static-cover span { top: 82px; left: 60px; font-size: 34px; }
+  .pp-book-static-cover strong { top: 114px; left: 38px; font-size: 25px; }
+  .pp-book-static-cover small { top: 160px; left: 40px; font-size: 16px; }
+  .pp-book-static-cover b { right: 18px; bottom: 18px; font-size: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pp-book-canvas { animation: none !important; }
+  .pp-book-static {
+    transition: none !important;
+    transform: rotate(1.5deg) !important;
+  }
+  .pp-book-scene:hover .pp-book-static {
+    transform: rotate(1.5deg) !important;
+    filter: drop-shadow(0 16px 26px rgba(35, 10, 18, 0.28)) !important;
+  }
 }

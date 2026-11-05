@@ -4,10 +4,11 @@
    ========================================================================== */
 
 :root {
-  /* Premium cream-paper cover — warm cardstock with dark ink */
-  --nb-cover-bg: linear-gradient(145deg, #fdfbf7 0%, #f5eddf 40%, #ede3d1 100%);
-  --nb-cover-dark: #d4c5ae;
-  --nb-cover-border: #c8b89a;
+  /* Premium Deep Burgundy Journal & Champagne Gold Foil Details */
+  --nb-cover-bg: linear-gradient(145deg, #4d1522 0%, #3a0d17 48%, #29080f 100%);
+  --nb-cover-dark: #2b0811;
+  --nb-cover-border: rgba(220, 185, 140, 0.55);
+  --nb-gold-foil: #f5d898;
   --nb-paper-cream: #fff9f0;
   --nb-paper-alt: #fcf4e8;
   --nb-paper-border: #ede1d3;
@@ -509,14 +510,14 @@
   }
 }
 
-/* Base Cover rim under open spread */
+/* Base Cover rim under open spread — rich burgundy border matching physical journal */
 .open-base-cover {
   position: absolute;
   inset: -6px -8px -8px -6px;
-  background: linear-gradient(135deg, #c74864 0%, #b83d5a 100%);
+  background: linear-gradient(135deg, #4d1522 0%, #3a0d17 50%, #29080f 100%);
   border-radius: 8px 18px 18px 8px;
   z-index: 2;
-  box-shadow: 0 16px 36px rgba(58, 22, 32, 0.18);
+  box-shadow: 0 18px 40px rgba(35, 10, 18, 0.28);
 }
 
 /* Multi-sheet edge stack layers */
