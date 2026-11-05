@@ -89,7 +89,7 @@ export const PhysicalNotebook = ({
 
   const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   const isStatic = reducedMotion || isJsdom;
-  const isExpanded = isOpen || state === 'open' || state === 'flipping' || state === 'settling';
+  const isExpanded = Boolean(isOpen);
 
   // In jsdom or reduced-motion environments,
   // render the StaticNotebook to fulfill accessibility and test contracts.

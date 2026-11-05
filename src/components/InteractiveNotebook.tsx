@@ -649,8 +649,9 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   <button
                     className="notebook-play-button"
                     onClick={() => onNavigate(currentPage.route)}
+                    aria-label={`Play ${currentPage.title}`}
                   >
-                    <span>Play {currentPage.title}</span>
+                    <span>Play this game</span>
                     <ArrowRight size={17} />
                   </button>
                   <span className="play-direct-note">✎ opens notebook page</span>

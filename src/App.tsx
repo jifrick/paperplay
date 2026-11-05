@@ -133,21 +133,11 @@ const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
     return () => media.removeEventListener?.('change', update);
   }, []);
 
+  // Keep the notebook strictly closed on page load — it only opens when
+  // the user explicitly clicks the notebook or the "Open notebook" CTA.
   useEffect(() => {
-    if (reducedMotion || isInteractiveOpen) {
-      if (reducedMotion) setNotebookState('closed');
-      return;
-    }
-    const timers = [
-      window.setTimeout(() => setNotebookState('opening'), 220),
-      window.setTimeout(() => setNotebookState('open'), 1350),
-      window.setTimeout(() => setNotebookState('flipping'), 1550),
-      window.setTimeout(() => setNotebookState('settling'), 4200),
-      window.setTimeout(() => setNotebookState('closing'), 4650),
-      window.setTimeout(() => setNotebookState('closed'), 5850),
-    ];
-    return () => timers.forEach(window.clearTimeout);
-  }, [reducedMotion, isInteractiveOpen]);
+    if (reducedMotion) setNotebookState('closed');
+  }, [reducedMotion]);
 
   const handleOpenNotebook = () => {
     setIsInteractiveOpen(true);
@@ -203,18 +193,6 @@ const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
            onPageChange={setCurrentPageIndex}
          />
        </div>
-    </section>
-    <section className="home-intro">
-      <div>
-        <span className="section-kicker">Pick a page</span>
-        <h2>Three ways to make two names <em>a little more interesting.</em></h2>
-      </div>
-      <p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p>
-    </section>
-    <section className="game-grid" aria-label="PAPERPLAY games">
-      <GameCard game="flames" onNavigate={() => openGameFromCard(GAME_PATHS.flames)} featured />
-      <GameCard game="name-number" onNavigate={() => openGameFromCard(GAME_PATHS['name-number'])} />
-      <GameCard game="love-meter" onNavigate={() => openGameFromCard(GAME_PATHS['love-meter'])} />
     </section>
     <section className="disclaimer-banner">
       <Info size={18} />
