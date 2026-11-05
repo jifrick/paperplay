@@ -88,7 +88,7 @@ export const PhysicalNotebook = ({
   }, []);
 
   const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
-  const isStatic = reducedMotion || isJsdom;
+  const isStatic = reducedMotion || isJsdom || !webglAvailable;
   const isExpanded = Boolean(isOpen);
 
   // In jsdom or reduced-motion environments,
@@ -101,6 +101,7 @@ export const PhysicalNotebook = ({
         data-turning-pages="5"
         aria-label="A pink physical notebook"
         role="img"
+        onClick={() => onOpenChange?.(true)}
       >
         <StaticNotebook />
       </div>

@@ -1,10 +1,8 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   ArrowRight,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -100,7 +98,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   onOpenChange,
   currentPageIndex = 0,
   onPageChange,
-  state: externalState,
 }) => {
   const [activePage, setActivePage] = useState(currentPageIndex);
   const [visualPhase, setVisualPhase] = useState<VisualPhase>(isOpen ? 'open' : 'closed');
@@ -229,7 +226,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [visualPhase, activePage, isFlipping]);
 
-  // Mouse tilt on closed notebook for realistic parallax depth
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (visualPhase !== 'closed' || reducedMotion) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -252,7 +248,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     setMouseTilt({ x: 0, y: 0 });
   };
 
-  // Touch swipe gesture support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -287,9 +282,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   const isClosing = visualPhase === 'closing';
   const isDisplayingSpread = isOpenState || isSettling || isOpening || isClosing;
 
-  // Closed state: stationary, strictly closed — hover does NOT rotate or tilt cover
-  const closedTransform = 'none';
-
   return (
     <div
       ref={notebookRef}
@@ -304,12 +296,9 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
       onTouchStart={isDisplayingSpread ? handleTouchStart : undefined}
       onTouchEnd={isDisplayingSpread ? handleTouchEnd : undefined}
     >
-      {/* =========================================================================
-          1. TOP NAVIGATION BAR (Visible when notebook is open or transitioning)
-         ========================================================================= */}
+      {/* 1. TOP NAVIGATION BAR (Visible when notebook is open or transitioning) */}
       {isDisplayingSpread && (
         <div className="notebook-top-bar" aria-label="Notebook header bar">
-          {/* Page Tabs */}
           <div className="notebook-page-tabs" role="tablist" aria-label="Notebook pages">
             {NOTEBOOK_PAGES.map((page, idx) => (
               <button
@@ -336,7 +325,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
             ))}
           </div>
 
-          {/* Close Notebook Button */}
           <button
             className="notebook-close-button"
             onClick={handleClose}
@@ -349,30 +337,23 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
         </div>
       )}
 
-      {/* =========================================================================
-          2. THE 3D NOTEBOOK STAGE
-         ========================================================================= */}
+      {/* 2. THE 3D NOTEBOOK STAGE */}
       <div className="notebook-3d-stage">
-        {/* Natural Drop Shadow on Desk */}
         <div
           className={`notebook-ground-shadow ${isClosed ? 'closed-shadow-mode' : 'spread-shadow-mode'}`}
           style={
             isClosed
               ? {
-                  // Subtle shadow, strictly stationary
                   opacity: 0.24,
                 }
               : undefined
           }
         />
 
-        {/* =======================================================================
-            A. CLOSED NOTEBOOK VIEW (Hinged, tiltable physical object)
-           ======================================================================= */}
+        {/* A. CLOSED NOTEBOOK VIEW */}
         {isClosed && (
           <div
             className="interactive-notebook-closed"
-            style={{ transform: closedTransform }}
             onClick={handleOpen}
             role="button"
             tabIndex={0}
@@ -384,10 +365,8 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               }
             }}
           >
-            {/* Physical Back Cover */}
             <div className="closed-back-cover" data-notebook-part="back-cover" />
 
-            {/* Layered Paper Edge (Real multi-sheet paper stack thickness) */}
             <div className="closed-paper-stack" data-notebook-part="paper-block">
               {Array.from({ length: 7 }, (_, i) => (
                 <div
@@ -401,7 +380,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               ))}
             </div>
 
-            {/* Spine with Metallic Wire Spiral Rings */}
             <div className="closed-spine" data-notebook-part="spine">
               <div className="closed-spine-crease" />
               <div className="closed-spine-rings">
@@ -413,14 +391,11 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               </div>
             </div>
 
-            {/* Front Cover Face */}
             <div
               className="closed-front-cover pp-book-cover-front"
               data-notebook-part="front-cover"
             >
-              {/* Subtle paper grain texture */}
               <div className="cover-grain-overlay" />
-              {/* Embossed dashed perimeter stitching */}
               <div className="cover-border-emboss" />
 
               <div className="cover-title-group">
@@ -429,10 +404,8 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 <small className="cover-subtitle">paper games &amp; big feelings</small>
               </div>
 
-              {/* Handwritten corner signature */}
               <b className="cover-signature">xoxo ♡</b>
 
-              {/* Specular sheen responding to mouse movement */}
               {isHovered && !reducedMotion && (
                 <div
                   className="cover-specular"
@@ -445,7 +418,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               )}
             </div>
 
-            {/* Floating Interaction Cue Pill */}
             <div className="open-cue-pill">
               <span className="cue-pulse-dot" />
               <span className="cue-pencil-icon">✎</span>
@@ -455,27 +427,22 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
           </div>
         )}
 
-        {/* =======================================================================
-            B. OPEN / TRANSITIONING NOTEBOOK SPREAD
-           ======================================================================= */}
+        {/* B. OPEN / TRANSITIONING NOTEBOOK SPREAD */}
         {isDisplayingSpread && (
           <div className="open-book-spread" aria-live="polite">
-            {/* Back cover base under open pages */}
             <div className="open-base-cover" data-notebook-part="back-cover" />
 
-            {/* Multi-sheet edge stack layers */}
             <div className="open-paper-edge-stack" data-notebook-part="paper-block">
               {Array.from({ length: 7 }, (_, i) => (
                 <div key={i} className="open-paper-edge-layer" data-notebook-part="page" />
               ))}
             </div>
 
-            {/* LEFT PAGE: Notebook Doodles, Schoolyard Rituals & Formula Notes */}
+            {/* LEFT PAGE */}
             <div className="open-page left-page">
               <div className="page-paper-lines" />
               <div className="page-margin-red" />
 
-              {/* Stacked paper edge thickness on the left (shifts as pages turn) */}
               <div
                 className="left-edge-thickness"
                 style={{ width: `${Math.max(3, (activePage + 1) * 3.5)}px` }}
@@ -487,7 +454,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   <span className="doodle-star">✦</span>
                 </div>
 
-                {/* Hand-drawn Game Doodles & Formulas */}
                 <div className="left-doodle-area">
                   {currentPage.leftDoodle === 'flames' && (
                     <div className="flames-doodle-art" aria-hidden="true">
@@ -554,7 +520,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 </div>
               </div>
 
-              {/* Dog-ear corner on bottom-left for previous page */}
               {activePage > 0 && (
                 <button
                   className="page-corner dog-ear-left"
@@ -569,7 +534,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               )}
             </div>
 
-            {/* CENTER SPINE BINDING WITH SPIRAL WIRE COILS */}
+            {/* CENTER SPINE */}
             <div className="open-spine-center" data-notebook-part="spine" aria-hidden="true">
               <div className="spine-seam" />
               <div className="spine-spiral-rings">
@@ -584,12 +549,11 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               </div>
             </div>
 
-            {/* RIGHT PAGE: Active Game Entry & Direct Play Action */}
+            {/* RIGHT PAGE */}
             <div className="open-page right-page">
               <div className="page-paper-lines" />
               <div className="page-margin-red" />
 
-              {/* Stacked paper edge thickness on the right */}
               <div
                 className="right-edge-thickness"
                 style={{
@@ -598,7 +562,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               />
 
               <div className="right-page-content">
-                {/* Mobile compact doodle snippet */}
                 <div className="mobile-doodle-strip" aria-hidden="true">
                   <span className="mobile-doodle-star">✦</span>
                   <span className="mobile-doodle-caption">
@@ -621,10 +584,8 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 </h2>
 
                 <p className="game-tagline">{currentPage.tagline}</p>
-
                 <p className="game-summary">{currentPage.summary}</p>
 
-                {/* Tags / Pills */}
                 <div className="game-tags-list">
                   {currentPage.tags.map((tag, i) => (
                     <span key={i} className="game-detail-tag">
@@ -634,7 +595,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   ))}
                 </div>
 
-                {/* Direct Play CTA Button */}
                 <div className="game-play-action">
                   <button
                     className="notebook-play-button"
@@ -652,7 +612,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 </div>
               </div>
 
-              {/* Dog-ear corner on bottom-right for next page */}
               {activePage < NOTEBOOK_PAGES.length - 1 && (
                 <button
                   className="page-corner dog-ear-right"
@@ -667,9 +626,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               )}
             </div>
 
-            {/* ===================================================================
-                3. THE PHYSICAL 3D HINGED FRONT COVER (Opening / Closing Rotation)
-               =================================================================== */}
+            {/* 3. 3D HINGED FRONT COVER */}
             {(isOpening || isClosing || isSettling) && (
               <div
                 className={`hinged-cover-overlay ${isOpening ? 'opening-motion' : ''} ${
@@ -678,7 +635,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                 data-notebook-part="front-cover"
                 aria-hidden="true"
               >
-                {/* Outer Pink Cloth Cover Face */}
                 <div className="hinged-cover-face cover-face-outer pp-book-cover-front">
                   <div className="cover-grain-overlay" />
                   <div className="cover-border-emboss" />
@@ -690,7 +646,6 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                   <b className="cover-signature">xoxo ♡</b>
                 </div>
 
-                {/* Inner Cream Endpaper Face */}
                 <div className="hinged-cover-face cover-face-inner">
                   <div className="page-paper-lines" />
                   <div className="inner-endpaper-content">
@@ -705,9 +660,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
               </div>
             )}
 
-            {/* ===================================================================
-                4. 3D TURNING PAGE OVERLAY DURING FLIP
-               =================================================================== */}
+            {/* 4. 3D TURNING PAGE OVERLAY */}
             {isFlipping && (
               <div
                 className={`turning-page-sheet turn-direction-${flipDirection}`}
@@ -741,9 +694,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
         )}
       </div>
 
-      {/* =========================================================================
-          5. BOTTOM DOCK CONTROLS (Previous, Counter, Next)
-         ========================================================================= */}
+      {/* 5. BOTTOM DOCK CONTROLS */}
       {isDisplayingSpread && (
         <div className="notebook-bottom-nav">
           <button
