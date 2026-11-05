@@ -152,12 +152,17 @@
 }
 
 .notebook-ground-shadow.closed-shadow-mode {
-  inset: 16px -16px -32px 12px;
+  inset: auto;
+  left: 8%;
+  right: 8%;
+  bottom: -22px;
+  height: 24px;
   background: radial-gradient(ellipse at 50% 50%,
-      rgba(68, 28, 40, 0.35) 0%,
-      rgba(68, 28, 40, 0.14) 45%,
-      transparent 75%);
-  filter: blur(16px);
+      rgba(68, 28, 40, 0.32) 0%,
+      rgba(68, 28, 40, 0.1) 55%,
+      transparent 80%);
+  filter: blur(12px);
+  animation: shadowFloatBreathe 5.5s ease-in-out infinite;
 }
 
 .notebook-ground-shadow.spread-shadow-mode {
@@ -188,7 +193,9 @@
 }
 
 .interactive-notebook-closed:hover {
+  /* Subtle lift effect on hover — notebook remains strictly closed at all times */
   animation-play-state: paused;
+  filter: drop-shadow(0 16px 28px rgba(68, 28, 40, 0.22));
 }
 
 .interactive-notebook-closed:focus-visible {
@@ -450,28 +457,23 @@
   }
 }
 /* Idle float for closed notebook on the desk */
+/* Idle float for closed notebook on the desk — subtle vertical only, absolutely NO rotation */
 @keyframes notebookFloatIdle {
   0%, 100% {
-    transform: perspective(1200px) rotateX(0deg) rotateY(4deg) rotateZ(-1.5deg) translateY(0px);
-  }
-  25% {
-    transform: perspective(1200px) rotateX(-1deg) rotateY(5deg) rotateZ(-1.5deg) translateY(-5px);
+    transform: translateY(0px);
   }
   50% {
-    transform: perspective(1200px) rotateX(0.5deg) rotateY(3.5deg) rotateZ(-2deg) translateY(-8px);
-  }
-  75% {
-    transform: perspective(1200px) rotateX(-0.5deg) rotateY(4.5deg) rotateZ(-1deg) translateY(-3px);
+    transform: translateY(-6px);
   }
 }
 
 @keyframes shadowFloatBreathe {
   0%, 100% {
-    transform: translate(0px, 24px) scale(1);
+    transform: translateY(24px) scale(1);
     opacity: 0.24;
   }
   50% {
-    transform: translate(0px, 32px) scale(0.92);
+    transform: translateY(30px) scale(0.9);
     opacity: 0.16;
   }
 }

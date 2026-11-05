@@ -235,11 +235,9 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    const normX = (e.clientX - centerX) / (rect.width / 2);
-    const normY = (e.clientY - centerY) / (rect.height / 2);
     setMouseTilt({
-      x: Math.max(-1, Math.min(1, normX)),
-      y: Math.max(-1, Math.min(1, normY)),
+      x: Math.max(-1, Math.min(1, (e.clientX - centerX) / (rect.width / 2))),
+      y: Math.max(-1, Math.min(1, (e.clientY - centerY) / (rect.height / 2))),
     });
   };
 
@@ -289,12 +287,8 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
   const isClosing = visualPhase === 'closing';
   const isDisplayingSpread = isOpenState || isSettling || isOpening || isClosing;
 
-  // Closed state perspective tilt
-  const closedTransform = isClosed
-    ? `perspective(1200px) rotateX(${isHovered ? -mouseTilt.y * 7 : 0}deg) rotateY(${
-        isHovered ? mouseTilt.x * 9 + 4 : 4
-      }deg) rotateZ(-1.5deg) translateZ(${isHovered ? 12 : 0}px)`
-    : 'none';
+  // Closed state: stationary, strictly closed — hover does NOT rotate or tilt cover
+  const closedTransform = 'none';
 
   return (
     <div
@@ -365,12 +359,8 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
           style={
             isClosed
               ? {
-                  transform: isHovered
-                    ? `translate(${mouseTilt.x * -18}px, ${mouseTilt.y * 12 + 28}px) scale(${
-                        1 + Math.abs(mouseTilt.x) * 0.05
-                      })`
-                    : 'translate(0px, 24px) scale(1)',
-                  opacity: isHovered ? 0.35 : 0.24,
+                  // Subtle shadow, strictly stationary
+                  opacity: 0.24,
                 }
               : undefined
           }
