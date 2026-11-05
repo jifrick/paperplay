@@ -89,27 +89,90 @@ describe('PAPERPLAY user flow', () => {
     expect(notebook).toHaveClass('is-closed');
   });
 
-  it('uses one explicit timeline and returns to the exact closed state', () => {
+  it('keeps the notebook strictly closed on page load — no auto-open timeline fires', () => {
     vi.useFakeTimers();
     try {
       const { container } = render(<App />);
       const notebook = () => container.querySelector('[data-notebook-state]');
+      // Should start closed
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+      // No auto-opening animation — advancing time should not change state
       act(() => { vi.advanceTimersByTime(220); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'opening');
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
       act(() => { vi.advanceTimersByTime(1130); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'open');
-      act(() => { vi.advanceTimersByTime(200); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'flipping');
-      act(() => { vi.advanceTimersByTime(2650); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'settling');
-      act(() => { vi.advanceTimersByTime(450); });
-      expect(notebook()).toHaveAttribute('data-notebook-state', 'closing');
-      act(() => { vi.advanceTimersByTime(1200); });
+      expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
+      act(() => { vi.advanceTimersByTime(6000); });
       expect(notebook()).toHaveAttribute('data-notebook-state', 'closed');
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('ensures notebook remains strictly closed during hover, mousemove, and pointer events', () => {
+    const { container } = render(<App />);
+    const notebook = container.querySelector('[data-notebook-state="closed"]');
+    expect(notebook).toBeInTheDocument();
+
+    // Hover, pointer movements, mouseover over the notebook
+    fireEvent.pointerEnter(notebook!);
+    fireEvent.mouseEnter(notebook!);
+    fireEvent.mouseOver(notebook!);
+    fireEvent.pointerMove(notebook!, { clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(notebook!, { clientX: 100, clientY: 100 });
+    fireEvent.pointerLeave(notebook!);
+    fireEvent.mouseLeave(notebook!);
+    fireEvent.mouseOut(notebook!);
+
+    // Also over hero section and cover art
+    const heroCover = container.querySelector('.cover-art');
+    fireEvent.mouseEnter(heroCover!);
+    fireEvent.mouseMove(heroCover!, { clientX: 200, clientY: 150 });
+    fireEvent.mouseLeave(heroCover!);
+
+    // It MUST remain strictly closed!
+    expect(notebook).toHaveAttribute('data-notebook-state', 'closed');
+    expect(notebook).toHaveClass('is-closed');
+    expect(container.querySelector('.open-book-spread')).not.toBeInTheDocument();
+  });
+
+  it('opens notebook ONLY on explicit click or tap or Enter/Space keyboard event', () => {
+    const { container } = render(<App />);
+    const notebook = container.querySelector('[data-notebook-state="closed"]');
+
+    // Focus alone does not open the notebook
+    fireEvent.focus(notebook!);
+    expect(notebook).toHaveAttribute('data-notebook-state', 'closed');
+    expect(window.location.pathname).toBe('/');
+
+    // Explicit click on closed notebook transitions to dedicated /notebook experience
+    fireEvent.click(notebook!);
+    expect(window.location.pathname).toBe('/notebook');
+    expect(screen.getByRole('heading', { name: 'FLAMES Classic' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close notebook' })).toBeInTheDocument();
+
+    // Closing it returns to / with closed notebook
+    fireEvent.click(screen.getByRole('button', { name: 'Close notebook' }));
+    expect(window.location.pathname).toBe('/');
+    expect(container.querySelector('[data-notebook-state="closed"]')).toBeInTheDocument();
+  });
+
+  it('opens notebook when pressing Enter or Space while focused', () => {
+    const { container } = render(<App />);
+    const notebook = container.querySelector('[data-notebook-state="closed"]');
+
+    fireEvent.keyDown(notebook!, { key: 'Enter' });
+    expect(window.location.pathname).toBe('/notebook');
+    expect(screen.getByRole('heading', { name: 'FLAMES Classic' })).toBeInTheDocument();
+
+    // Press Escape to close back to homepage
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(window.location.pathname).toBe('/');
+    expect(container.querySelector('[data-notebook-state="closed"]')).toBeInTheDocument();
+
+    // Now test Space key
+    const notebookAgain = container.querySelector('[data-notebook-state="closed"]');
+    fireEvent.keyDown(notebookAgain!, { key: ' ' });
+    expect(window.location.pathname).toBe('/notebook');
   });
 
   it('keeps a stable closed fallback when reduced motion is requested', () => {

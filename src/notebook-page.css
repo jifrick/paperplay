@@ -20,6 +20,43 @@
 
 .app-shell .cover-art {
   height: 410px;
+  transition: all 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-shell .cover-section.is-notebook-expanded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1040px;
+  margin: 0 auto;
+  gap: 32px;
+  padding-bottom: 48px;
+}
+
+.app-shell .cover-section.is-notebook-expanded .cover-copy {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.app-shell .cover-section.is-notebook-expanded .cover-copy .pill,
+.app-shell .cover-section.is-notebook-expanded .hero-actions,
+.app-shell .cover-section.is-notebook-expanded .hero-note {
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app-shell .cover-section.is-notebook-expanded .cover-art {
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  min-height: 520px;
+}
+
+.app-shell .cover-section.is-notebook-expanded .hero-doodles {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* The page itself is the sheet. Keep content on the red margin and let the

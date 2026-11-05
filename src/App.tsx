@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { NotebookNameField } from './components/NotebookNameField';
 import { PhysicalNotebook } from './components/PhysicalNotebook';
+import { InteractiveNotebook } from './components/InteractiveNotebook';
 import type { NotebookState } from './components/PhysicalNotebook';
 import { calculateFlames, FLAMES_MEANINGS } from './games/flames/calculateFlames';
 import { RESULT_COPY, MODE_LABELS } from './games/flames/flames.copy';
@@ -120,43 +121,68 @@ const GameCard = ({ game, onNavigate, featured = false }: { game: GameId; onNavi
 };
 
 const HomePage = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
-  const [notebookState, setNotebookState] = useState<NotebookState>('closed');
-  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
-  useEffect(() => {
-    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    if (!media) return;
-    const update = () => setReducedMotion(media.matches);
-    media.addEventListener?.('change', update);
-    return () => media.removeEventListener?.('change', update);
-  }, []);
-  useEffect(() => {
-    if (reducedMotion) {
-      setNotebookState('closed');
-      return;
-    }
-    const timers = [
-      window.setTimeout(() => setNotebookState('opening'), 220),
-      window.setTimeout(() => setNotebookState('open'), 1350),
-      window.setTimeout(() => setNotebookState('flipping'), 1550),
-      window.setTimeout(() => setNotebookState('settling'), 4200),
-      window.setTimeout(() => setNotebookState('closing'), 4650),
-      window.setTimeout(() => setNotebookState('closed'), 5850),
-    ];
-    return () => timers.forEach(window.clearTimeout);
-  }, [reducedMotion]);
-  const openNotebook = (destination = '/games/flames') => {
-    onNavigate(destination);
+  const handleOpenNotebook = () => {
+    onNavigate('/notebook');
   };
 
   return <>
     <section className="cover-section">
-       <div className="cover-copy"><span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span><h1>Remember when a name could change your whole <em>afternoon?</em></h1><p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p><div className="hero-actions"><button className="primary-button large" onClick={() => openNotebook()}><BookOpen size={19} /> Open notebook <ArrowRight size={17} /></button><Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link></div><p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p></div>
-       <div className={`cover-art is-${notebookState}`}><div className="doodle doodle-star">✦</div><div className="hero-doodles" aria-hidden="true"><span className="doodle-heart">♡</span><span className="doodle-cross">A̶ + B̶</span><span className="doodle-math">2 + 2 = ?</span><span className="doodle-pencil">— — ✎</span></div><PhysicalNotebook state={notebookState} /></div>
+       <div className="cover-copy">
+         <span className="pill"><span className="pill-dot" /> A tiny digital notebook of games</span>
+         <h1>Remember when a name could change your whole <em>afternoon?</em></h1>
+         <p className="hero-lede">PAPERPLAY brings the scribbled margins, crossed-out letters, and big reveals of childhood notebook games to your screen.</p>
+         <div className="hero-actions">
+           <button className="primary-button large" onClick={handleOpenNotebook}>
+             <BookOpen size={19} /> Open notebook <ArrowRight size={17} />
+           </button>
+           <Link href="/how-it-works" onNavigate={onNavigate} className="subtle-link">See how it works <ArrowRight size={15} /></Link>
+         </div>
+         <p className="hero-note"><ShieldCheck size={15} /> Runs in your browser. No account. Just for fun.</p>
+       </div>
+       <div className="cover-art is-closed">
+         <div className="doodle doodle-star">✦</div>
+         <div className="hero-doodles" aria-hidden="true">
+           <span className="doodle-heart">♡</span>
+           <span className="doodle-cross">A̶ + B̶</span>
+           <span className="doodle-math">2 + 2 = ?</span>
+           <span className="doodle-pencil">— — ✎</span>
+         </div>
+         <PhysicalNotebook
+           state="closed"
+           isOpen={false}
+           onOpenChange={(open) => {
+             if (open) handleOpenNotebook();
+           }}
+           onNavigate={onNavigate}
+         />
+       </div>
     </section>
-      <section className="home-intro"><div><span className="section-kicker">Pick a page</span><h2>Three ways to make two names <em>a little more interesting.</em></h2></div><p>From the classic schoolyard calculation to new PAPERPLAY inventions, every game is transparent, deterministic, and delightfully unserious.</p></section>
-      <section className="game-grid" aria-label="PAPERPLAY games"><GameCard game="flames" onNavigate={() => openNotebook(GAME_PATHS.flames)} featured /><GameCard game="name-number" onNavigate={() => openNotebook(GAME_PATHS['name-number'])} /><GameCard game="love-meter" onNavigate={() => openNotebook(GAME_PATHS['love-meter'])} /></section>
-     <section className="disclaimer-banner"><Info size={18} /><p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p></section>
-   </>;
+    <section className="disclaimer-banner">
+      <Info size={18} />
+      <p><strong>A note from the margin:</strong> These games are entertainment, not science, prophecy, or relationship advice. The fun is in the ritual.</p>
+    </section>
+  </>;
+};
+
+const NotebookExperience = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+
+  return (
+    <div className="dedicated-notebook-viewport" aria-label="Interactive Notebook Experience">
+      <div className="dedicated-notebook-container">
+        <InteractiveNotebook
+          state="open"
+          isOpen={true}
+          onOpenChange={(open) => {
+            if (!open) onNavigate('/');
+          }}
+          onNavigate={onNavigate}
+          currentPageIndex={currentPageIndex}
+          onPageChange={setCurrentPageIndex}
+        />
+      </div>
+    </div>
+  );
 };
 
 const InfoPage = ({ kind, onNavigate }: { kind: 'how' | 'about' | 'privacy' | 'contact'; onNavigate: (href: string) => void }) => {
@@ -195,6 +221,7 @@ const Contact = () => <div className="prose-grid single-column contact-content">
 
 const getPageMetadata = (path: string) => {
   if (path === '/') return { title: 'PAPERPLAY — Nostalgic notebook games', description: 'PAPERPLAY brings nostalgic school notebook games to life. Write two names and play like old times.' };
+  if (path === '/notebook') return { title: 'Interactive Notebook — PAPERPLAY', description: 'Flip through the childhood paper games notebook.' };
   if (isGameId(path)) {
     const game = GAME_INFO[path.split('/').pop() as GameId];
     return { title: `${game.title} — PAPERPLAY`, description: `${game.description} Just for entertainment.` };
@@ -230,6 +257,7 @@ export const App = () => {
   }, [pageDescription, pageTitle, route.path]);
   let content: React.ReactNode;
   if (route.path === '/') content = <HomePage onNavigate={navigate} />;
+  else if (route.path === '/notebook') content = <NotebookExperience onNavigate={navigate} />;
   else if (isGameId(route.path)) content = <GamePage game={route.path.split('/').pop() as GameId} onNavigate={navigate} query={route.query} />;
   else if (route.path === '/how-it-works') content = <InfoPage kind="how" onNavigate={navigate} />;
   else if (route.path === '/about') content = <InfoPage kind="about" onNavigate={navigate} />;
