@@ -48,19 +48,19 @@ export const NOTEBOOK_PAGES: GamePageData[] = [
   {
     id: 'name-number',
     pageNumber: '02',
-    eyebrow: 'Create your private couple code',
-    title: 'SECRET CODE',
+    eyebrow: 'Two names. One special number.',
+    title: 'SECRET NUMBER',
     route: '/games/name-number',
     accent: '#8b5cf6',
-    tagline: 'Turn two names into one special code. Something only you two can share.',
+    tagline: 'Two names come together to create one special number. Discover yours inside the PAPERPLAY notebook.',
     summary:
-      'Two names enter, one private code is born. A deterministic cipher generates a unique couple code (PP-XXXX-XXXX) that belongs only to the two of you.',
-    ritualStep: 'Write two names · Interlock letters · Generate your secret code',
-    leftNoteHeader: '— the couple cipher —',
+      'Two names enter, and a progressive mathematical notebook reveals letter mappings, position-based fingerprints, and combination formulas to calculate your exact three-digit Secret Number.',
+    ritualStep: 'Step 1: Two names · Step 2: Animated mathematical notebook · Step 3: Three-digit Secret Number',
+    leftNoteHeader: '— mathematical notebook —',
     leftNoteBody:
-      'Two names. One secret code. Created from the letters of your names, deterministic and private to share between yourselves.',
+      'Two names come together to create one special number. Watch the formulas write out step by step and discover your special 3-digit number.',
     leftDoodle: 'cipher',
-    tags: ['Couple secret code', 'Deterministic cipher', 'Private keepsake'],
+    tags: ['Exact 3-digit number', 'Canonical algorithm', 'Animated notebook trace'],
   },
   {
     id: 'love-meter',
@@ -449,7 +449,7 @@ export const InteractiveNotebook: React.FC<InteractiveNotebookProps> = ({
                         <div className="cipher-pair"><span>Z</span><b>X</b></div>
                       </div>
                       <div className="cipher-calc-scribble">
-                        <code>Anna + Aman ➔ PP-7K29-X48A</code>
+                        <code>JIFRI + ANNA ➔ 070</code>
                         <span className="scribble-check">✓</span>
                       </div>
                     </div>
