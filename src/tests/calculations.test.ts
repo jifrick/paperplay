@@ -150,73 +150,28 @@ describe('Letter Match', () => {
   });
 });
 
-describe('Name Number', () => {
-  it('uses A1Z26, ignores punctuation, and maps deterministically', () => {
+describe('SECRET NUMBER V1 Algorithm', () => {
+  it('processes names deterministically, ignores punctuation, and produces formatted 3-digit secret number', () => {
     const result = calculateNameNumber('A!', 'z');
     expect(result.status).toBe('complete');
     if (result.status !== 'complete') return;
-    expect(result.first.score).toBe(1);
-    expect(result.second.score).toBe(26);
-    expect(result.combinedScore).toBe(27);
-    expect(result.categoryIndex).toBe(2);
-    expect(result.category).toBe('Double Trouble');
+    expect(result.canonicalFirst.name).toBe('A');
+    expect(result.canonicalSecond.name).toBe('Z');
+    expect(result.formattedSecretNumber).toBe('299');
     expect(result.unsupportedCharacters).toBe(true);
     expect(result.disclaimer).toBe(NAME_NUMBER_DISCLAIMER);
-    expect(result.walkthrough.explanation).toContain('27');
   });
 
-  it('maps all five modulo categories consistently across boundaries', () => {
-    expect(NAME_NUMBER_CATEGORIES[0]).toBe('Notebook Legends');
-    expect(NAME_NUMBER_CATEGORIES[1]).toBe('Unexpected Duo');
-    expect(NAME_NUMBER_CATEGORIES[2]).toBe('Double Trouble');
-    expect(NAME_NUMBER_CATEGORIES[3]).toBe('Classic Combo');
-    expect(NAME_NUMBER_CATEGORIES[4]).toBe('Plot Twist Pair');
+  it('calculates the exact prompt fixed fixtures (e.g. JIFRI + ANNA = 070, ALI + SARA = 087)', () => {
+    const resAli = calculateNameNumber('ALI', 'SARA');
+    expect(resAli.status).toBe('complete');
+    if (resAli.status !== 'complete') return;
+    expect(resAli.formattedSecretNumber).toBe('087');
 
-    // A=1, B=2, C=3, D=4, E=5
-    // Remainder 0: A + D = 1 + 4 = 5 (5 % 5 = 0) -> Notebook Legends
-    const r0 = calculateNameNumber('A', 'D');
-    expect('error' in r0).toBe(false);
-    if (!('error' in r0)) {
-      expect(r0.combinedScore).toBe(5);
-      expect(r0.categoryIndex).toBe(0);
-      expect(r0.category).toBe('Notebook Legends');
-    }
-
-    // Remainder 1: A + E = 1 + 5 = 6 (6 % 5 = 1) -> Unexpected Duo
-    const r1 = calculateNameNumber('A', 'E');
-    expect('error' in r1).toBe(false);
-    if (!('error' in r1)) {
-      expect(r1.combinedScore).toBe(6);
-      expect(r1.categoryIndex).toBe(1);
-      expect(r1.category).toBe('Unexpected Duo');
-    }
-
-    // Remainder 2: B + E = 2 + 5 = 7 (7 % 5 = 2) -> Double Trouble
-    const r2 = calculateNameNumber('B', 'E');
-    expect('error' in r2).toBe(false);
-    if (!('error' in r2)) {
-      expect(r2.combinedScore).toBe(7);
-      expect(r2.categoryIndex).toBe(2);
-      expect(r2.category).toBe('Double Trouble');
-    }
-
-    // Remainder 3: C + E = 3 + 5 = 8 (8 % 5 = 3) -> Classic Combo
-    const r3 = calculateNameNumber('C', 'E');
-    expect('error' in r3).toBe(false);
-    if (!('error' in r3)) {
-      expect(r3.combinedScore).toBe(8);
-      expect(r3.categoryIndex).toBe(3);
-      expect(r3.category).toBe('Classic Combo');
-    }
-
-    // Remainder 4: D + E = 4 + 5 = 9 (9 % 5 = 4) -> Plot Twist Pair
-    const r4 = calculateNameNumber('D', 'E');
-    expect('error' in r4).toBe(false);
-    if (!('error' in r4)) {
-      expect(r4.combinedScore).toBe(9);
-      expect(r4.categoryIndex).toBe(4);
-      expect(r4.category).toBe('Plot Twist Pair');
-    }
+    const resJifri = calculateNameNumber('JIFRI', 'ANNA');
+    expect(resJifri.status).toBe('complete');
+    if (resJifri.status !== 'complete') return;
+    expect(resJifri.formattedSecretNumber).toBe('070');
   });
 
   it('rejects a name with no scorable A–Z letters', () => {
