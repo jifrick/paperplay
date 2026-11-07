@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, FastForward, Check, Copy, Share2, Info } from 'lucide-react';
 import type { SecretNumberCalculationTrace } from '../games/name-number/calculateSecretNumber';
 
@@ -10,7 +10,6 @@ interface MathematicalNotebookProps {
   reducedMotion?: boolean;
 }
 
-// Representing each written segment or symbol in sequence
 interface CalculationLine {
   id: string;
   stage: 1 | 2 | 3 | 4 | 5;
@@ -21,11 +20,11 @@ interface CalculationLine {
 }
 
 /**
- * Builds the exact step-by-step sequence of lines to be physically written by the pencil
+ * Builds the exact step-by-step sequence of calculation lines
  * from the Secret Number calculation trace.
  */
 function buildCalculationLines(trace: SecretNumberCalculationTrace): CalculationLine[] {
-  const { canonicalFirst, canonicalSecond, combination, originalFirst, originalSecond } = trace;
+  const { canonicalFirst, canonicalSecond, combination } = trace;
   const lines: CalculationLine[] = [];
 
   // STAGE 1: Hidden Letter Mapping
@@ -177,65 +176,18 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
 }) => {
   const lines = useRef<CalculationLine[]>(buildCalculationLines(trace)).current;
 
-  // State
+  // Progressive handwriting state
   const [currentLineIndex, setCurrentLineIndex] = useState<number>(reducedMotion ? lines.length : 0);
   const [currentCharIndex, setCurrentCharIndex] = useState<number>(reducedMotion ? 9999 : 0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Pencil Tip Coordinates relative to notebook container
-  const [pencilPos, setPencilPos] = useState<{ x: number; y: number; isWriting: boolean; lifting: boolean } | null>(null);
-
   const containerRef = useRef<HTMLDivElement>(null);
-  const charSpanRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const timerRef = useRef<number | null>(null);
 
   const isCompleted = currentLineIndex >= lines.length;
 
-  // Measure active character span to position the pencil tip exactly
-  const updatePencilPosition = useCallback(() => {
-    if (reducedMotion || isCompleted || !containerRef.current) {
-      setPencilPos(null);
-      return;
-    }
-
-    const currentLine = lines[currentLineIndex];
-    if (!currentLine) return;
-
-    const charKey = `${currentLine.id}-${currentCharIndex}`;
-    const spanElem = charSpanRefs.current.get(charKey);
-    const containerRect = containerRef.current.getBoundingClientRect();
-
-    if (spanElem) {
-      const charRect = spanElem.getBoundingClientRect();
-      const x = charRect.right - containerRect.left;
-      const y = charRect.bottom - containerRect.top - 4; // Right at baseline where pencil graphite touches
-      setPencilPos({ x, y, isWriting: true, lifting: false });
-    } else {
-      // If at start of line or transitioning
-      const firstCharKey = `${currentLine.id}-0`;
-      const firstElem = charSpanRefs.current.get(firstCharKey);
-      if (firstElem) {
-        const firstRect = firstElem.getBoundingClientRect();
-        const x = firstRect.left - containerRect.left;
-        const y = firstRect.bottom - containerRect.top - 4;
-        setPencilPos({ x, y, isWriting: false, lifting: true });
-      }
-    }
-  }, [currentLineIndex, currentCharIndex, isCompleted, lines, reducedMotion]);
-
-  useLayoutEffect(() => {
-    updatePencilPosition();
-  }, [updatePencilPosition]);
-
-  // Handle window resizing to keep pencil positioned accurately
-  useEffect(() => {
-    const handleResize = () => updatePencilPosition();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [updatePencilPosition]);
-
-  // Progressive writing loop
+  // Progressive handwriting loop (stroke by stroke)
   useEffect(() => {
     if (reducedMotion || isPaused || isCompleted) {
       if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -246,22 +198,22 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
     if (!currentLine) return;
 
     if (currentCharIndex < currentLine.text.length) {
-      // Writing next character
-      // Add slight organic human typing speed variation (18ms to 38ms)
+      // Writing next character with natural organic rhythm
       const char = currentLine.text[currentCharIndex];
       const isSpace = char === ' ';
-      const isPunctuation = [',', '=', '+', '×', '(', ')'].includes(char);
-      const delay = isSpace ? 28 : isPunctuation ? 45 : 22 + Math.floor(Math.random() * 15);
+      const isPunctuation = [',', '=', '+', '×', '(', ')', '•', '➔'].includes(char);
+      // Varied timing mimicking natural human pen/pencil velocity
+      const delay = isSpace ? 24 : isPunctuation ? 36 : 18 + Math.floor(Math.random() * 12);
 
       timerRef.current = window.setTimeout(() => {
         setCurrentCharIndex((prev) => prev + 1);
       }, delay);
     } else {
-      // Line finished! Natural pause before lifting pencil and moving to next line
+      // Line finished: natural pause before moving to the next line on the ruled paper
       const isStageChange =
         lines[currentLineIndex + 1] &&
         lines[currentLineIndex + 1].stage !== currentLine.stage;
-      const lineEndDelay = isStageChange ? 380 : 160;
+      const lineEndDelay = isStageChange ? 320 : 140;
 
       timerRef.current = window.setTimeout(() => {
         setCurrentLineIndex((prev) => prev + 1);
@@ -283,7 +235,6 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
     if (timerRef.current) window.clearTimeout(timerRef.current);
     setCurrentLineIndex(lines.length);
     setCurrentCharIndex(9999);
-    setPencilPos(null);
   };
 
   const handleReplay = () => {
@@ -333,7 +284,7 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
           {/* Top Controls Toolbar */}
           <div className="math-notebook-toolbar">
             <div className="math-notebook-heading">
-              <span>✎ Mathematical Notebook</span>
+              <span>Mathematical Notebook</span>
               <span className="math-stage-pill">
                 {!isCompleted ? 'Writing Calculations...' : 'Calculation Complete'}
               </span>
@@ -385,15 +336,12 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
             </p>
           </div>
 
-          {/* Physically Written Lines */}
+          {/* Physically Written Handwriting Surface (No pointer/pencil illustration) */}
           <div className="math-written-lines-surface">
             {lines.map((line, lIdx) => {
               if (lIdx > currentLineIndex) return null;
 
               const isCurrentLine = lIdx === currentLineIndex;
-              const textToRender = isCurrentLine
-                ? line.text.slice(0, currentCharIndex)
-                : line.text;
 
               return (
                 <div
@@ -404,16 +352,12 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
                 >
                   {line.text.split('').map((char, cIdx) => {
                     const isVisible = !isCurrentLine || cIdx < currentCharIndex;
-                    const charKey = `${line.id}-${cIdx}`;
+                    const isFresh = isCurrentLine && cIdx === currentCharIndex - 1;
 
                     return (
                       <span
                         key={cIdx}
-                        ref={(el) => {
-                          if (el) charSpanRefs.current.set(charKey, el);
-                          else charSpanRefs.current.delete(charKey);
-                        }}
-                        className={`math-handwritten-char ${isVisible ? 'visible' : 'hidden'}`}
+                        className={`math-handwritten-char ${isVisible ? 'visible' : 'hidden'} ${isFresh ? 'fresh-stroke' : ''}`}
                       >
                         {char === ' ' ? '\u00a0' : char}
                       </span>
@@ -423,43 +367,6 @@ export const MathematicalNotebook: React.FC<MathematicalNotebookProps> = ({
               );
             })}
           </div>
-
-          {/* PHYSICAL PENCIL / PEN GRAPHIC THAT MOVES WITH THE WRITING */}
-          {pencilPos && !isCompleted && !reducedMotion && (
-            <div
-              className={`physical-pencil-indicator ${pencilPos.lifting ? 'is-lifting' : 'is-drawing'}`}
-              style={{
-                left: `${pencilPos.x}px`,
-                top: `${pencilPos.y}px`,
-              }}
-              aria-hidden="true"
-            >
-              {/* Detailed Real Pencil SVG SVG */}
-              <svg
-                className="pencil-drawing-graphic"
-                viewBox="0 0 48 96"
-                width="34"
-                height="68"
-              >
-                {/* Pencil Body (yellow hexagonal pencil with graphite lead tip and pink eraser) */}
-                <g transform="rotate(-32 10 90)">
-                  {/* Lead tip at (10, 90) */}
-                  <polygon points="10,90 6,80 14,80" fill="#2b2030" />
-                  {/* Wood sharpen cone */}
-                  <polygon points="6,80 14,80 16,68 4,68" fill="#e2c89f" />
-                  {/* Yellow pencil barrel */}
-                  <rect x="4" y="16" width="12" height="52" fill="#f59e0b" rx="1" />
-                  <line x1="8" y1="16" x2="8" y2="68" stroke="#d97706" strokeWidth="1" />
-                  <line x1="12" y1="16" x2="12" y2="68" stroke="#b45309" strokeWidth="1" />
-                  {/* Metal ferrule */}
-                  <rect x="4" y="8" width="12" height="8" fill="#94a3b8" />
-                  <line x1="4" y1="12" x2="16" y2="12" stroke="#64748b" strokeWidth="1" />
-                  {/* Pink Eraser top */}
-                  <path d="M4,8 Q10,0 16,8 Z" fill="#f43f5e" />
-                </g>
-              </svg>
-            </div>
-          )}
 
           {/* Final Number Reveal Card when handwriting finishes */}
           {isCompleted && (
