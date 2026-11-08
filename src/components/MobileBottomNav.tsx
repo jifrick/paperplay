@@ -82,25 +82,27 @@ export const MobileBottomNav = ({ pathname, onNavigate }: MobileBottomNavProps) 
       </div>
       <div className="mobile-dock">
         <span className="mobile-dock-shelf" aria-hidden="true" />
-        {mobileItems.map((item) => {
-          const { label, href, Icon } = item;
-          const active = activeFor(href);
-          return (
-            <a
-              key={href}
-              href={href}
-              className={`mobile-nav-item ${item.itemClass}${active ? ' active' : ''}${selectionPulse === item.itemClass ? ' selection-pulse' : ''}`}
-              aria-current={active ? 'page' : undefined}
-              onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(href); }}
-            >
-              <span className="mobile-nav-icon"><Icon /></span>
-              <span className="mobile-nav-label">{label}</span>
-            </a>
-          );
-        })}
+        <div className="mobile-dock-pill">
+          {mobileItems.map((item) => {
+            const { label, href, Icon } = item;
+            const active = activeFor(href);
+            return (
+              <a
+                key={href}
+                href={href}
+                className={`mobile-nav-item ${item.itemClass}${active ? ' active' : ''}${selectionPulse === item.itemClass ? ' selection-pulse' : ''}`}
+                aria-current={active ? 'page' : undefined}
+                onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(href); }}
+              >
+                <span className="mobile-nav-icon"><Icon /></span>
+                <span className="mobile-nav-label">{label}</span>
+              </a>
+            );
+          })}
+        </div>
         <button
           type="button"
-          className={`mobile-nav-item more-item${moreActive || moreOpen ? ' active' : ''}${selectionPulse === 'more-item' ? ' selection-pulse' : ''}`}
+          className={`mobile-nav-item mobile-nav-fab more-item${moreActive || moreOpen ? ' active' : ''}${selectionPulse === 'more-item' ? ' selection-pulse' : ''}`}
           aria-label="More"
           aria-expanded={moreOpen}
           aria-controls="paperplay-more-menu"
